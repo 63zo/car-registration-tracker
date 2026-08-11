@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoVault - Car Registration & Expiry Tracker</title>
+  <meta name="description" content="Track your vehicle registration expiration dates, license plate details, and car models in real time with dynamic notifications and countdown timers.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-background">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+  </div>
+  <div class="layout-wrapper">
+    <!-- Navigation Header -->
+    <header class="app-header">
+      <div class="brand-container">
+        <div class="brand-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.05 10.9 2 11.2 2 11.5V16c0 .6.4 1 1 1h2"/>
+            <circle cx="7" cy="17" r="2"/>
+            <path d="M9 17h6"/>
+            <circle cx="17" cy="17" r="2"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">AutoVault</h1>
+          <p class="brand-subtitle">Vehicle Registration & Expiry Hub</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="theme-toggle-btn" class="btn btn-icon" title="Toggle Theme" aria-label="Toggle Theme">
+          <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+        <button id="export-btn" class="btn btn-secondary btn-sm" title="Backup vehicles data to JSON file">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Export</span>
+        </button>
+        <button id="import-btn" class="btn btn-secondary btn-sm" title="Restore vehicles data from JSON file">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Import</span>
+        </button>
+        <input type="file" id="import-file-input" accept=".json" style="display: none;">
+        <button id="add-car-btn" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Add Vehicle</span>
+        </button>
+      </div>
+    </header>
+    <!-- Urgent Alerts Banner Container -->
+    <div id="urgent-alerts-container" class="alerts-wrapper"></div>
+    <!-- Statistics Overview Dashboard -->
+    <section class="stats-grid" aria-label="Registration Statistics">
+      <div class="stat-card" data-stat="total">
+        <div class="stat-icon icon-blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.05 10.9 2 11.2 2 11.5V16c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Vehicles</span>
+          <span id="stat-total-count" class="stat-value">0</span>
+        </div>
+      </div>
+      <div class="stat-card" data-stat="active">
+        <div class="stat-icon icon-green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Active / Valid</span>
+          <span id="stat-active-count" class="stat-value text-green">0</span>
+        </div>
+      </div>
+      <div class="stat-card" data-stat="expiring">
+        <div class="stat-icon icon-amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Expiring Soon (≤30d)</span>
+          <span id="stat-expiring-count" class="stat-value text-amber">0</span>
+        </div>
+      </div>
+      <div class="stat-card" data-stat="expired">
+        <div class="stat-icon icon-red">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Expired</span>
+          <span id="stat-expired-count" class="stat-value text-red">0</span>
+        </div>
+      </div>
+    </section>
+    <!-- Toolbar: Search, Filters & Views -->
+    <section class="toolbar-section">
+      <div class="search-box">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-input" placeholder="Search by model, plate number, or color..." aria-label="Search vehicles">
+        <button id="clear-search-btn" class="clear-btn hidden" title="Clear Search">&times;</button>
+      </div>
+      <div class="filter-tabs" role="tablist" aria-label="Filter Vehicles">
+        <button class="filter-tab active" data-filter="all" role="tab" aria-selected="true">All</button>
+        <button class="filter-tab" data-filter="active" role="tab" aria-selected="false">Active</button>
+        <button class="filter-tab" data-filter="expiring" role="tab" aria-selected="false">Expiring Soon</button>
+        <button class="filter-tab" data-filter="expired" role="tab" aria-selected="false">Expired</button>
+      </div>
+      <div class="toolbar-controls">
+        <div class="select-wrapper">
+          <select id="sort-select" aria-label="Sort vehicles">
+            <option value="expiry-asc">Expiry: Soonest First</option>
+            <option value="expiry-desc">Expiry: Furthest First</option>
+            <option value="model-asc">Model: A to Z</option>
+            <option value="plate-asc">Plate: A to Z</option>
+            <option value="added-desc">Recently Added</option>
+          </select>
+        </div>
+        <div class="view-toggle">
+          <button id="view-grid-btn" class="btn-toggle active" title="Grid View" aria-label="Grid View">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </button>
+          <button id="view-list-btn" class="btn-toggle" title="List View" aria-label="List View">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+    <!-- Main Content Container -->
+    <main>
+      <div id="vehicles-container" class="vehicles-grid">
+        <!-- Vehicle Cards injected dynamically by app.js -->
+      </div>
+      <!-- Empty State View -->
+      <div id="empty-state" class="empty-state hidden">
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.05 10.9 2 11.2 2 11.5V16c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+        </div>
+        <h3 id="empty-title">No vehicles found</h3>
+        <p id="empty-description">Get started by clicking "+ Add Vehicle" or clearing your search filter.</p>
+        <button id="empty-action-btn" class="btn btn-primary" style="margin-top: 1rem;">+ Add Your First Car</button>
+      </div>
+    </main>
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>&copy; 2026 AutoVault - Vehicle Registration & Expiry System. Local Browser Storage Protected.</p>
+    </footer>
+  </div>
+  <!-- Add / Edit Car Modal Dialog -->
+  <div id="car-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-title">Add New Vehicle</h2>
+        <button id="close-modal-btn" class="btn-icon-sm" aria-label="Close modal">&times;</button>
+      </div>
+      <form id="car-form" novalidate>
+        <input type="hidden" id="car-id">
+        <!-- Dynamic License Plate Live Preview -->
+        <div class="plate-preview-wrapper">
+          <label class="input-label" style="text-align: center; width: 100%; display: block;">Live Plate Preview</label>
+          <div class="license-plate-preview" id="live-plate-preview">
+            <div class="plate-header">
+              <span class="plate-country" id="preview-country">STATE / REGION</span>
+            </div>
+            <div class="plate-number" id="preview-plate-text">ABC-1234</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <!-- Plate Number -->
+          <div class="form-group">
+            <label for="plate-input" class="input-label">Number Plate <span class="required">*</span></label>
+            <input type="text" id="plate-input" class="form-input" placeholder="e.g. ABC-1234 or 7890-XYZ" required maxlength="15">
+            <span class="error-msg" id="plate-error">Please enter a valid license plate number</span>
+          </div>
+          <!-- Car Model -->
+          <div class="form-group">
+            <label for="model-input" class="input-label">Make & Model <span class="required">*</span></label>
+            <input type="text" id="model-input" class="form-input" placeholder="e.g. Tesla Model 3 / Toyota Camry" required>
+            <span class="error-msg" id="model-error">Please enter car make & model</span>
+          </div>
+          <!-- Expiry Date -->
+          <div class="form-group">
+            <label for="expiry-input" class="input-label">Registration Expiry Date <span class="required">*</span></label>
+            <input type="date" id="expiry-input" class="form-input" required>
+            <span class="error-msg" id="expiry-error">Please select a valid expiry date</span>
+          </div>
+          <!-- Vehicle Type -->
+          <div class="form-group">
+            <label for="type-input" class="input-label">Vehicle Type</label>
+            <select id="type-input" class="form-input">
+              <option value="Sedan">Sedan</option>
+              <option value="SUV">SUV / Crossover</option>
+              <option value="Sports">Sports / Coupe</option>
+              <option value="Electric">Electric Vehicle (EV)</option>
+              <option value="Truck">Truck / Pickup</option>
+              <option value="Motorcycle">Motorcycle</option>
+              <option value="Van">Van / Minivan</option>
+            </select>
+          </div>
+          <!-- Car Color Tag -->
+          <div class="form-group">
+            <label for="color-input" class="input-label">Vehicle Color</label>
+            <div class="color-picker-row">
+              <input type="color" id="color-picker" value="#3B82F6" class="color-swatch-input" title="Choose color">
+              <input type="text" id="color-input" class="form-input" placeholder="e.g. Midnight Blue" value="Blue">
+            </div>
+          </div>
+          <!-- Insurance Expiry (Optional extra feature) -->
+          <div class="form-group">
+            <label for="insurance-input" class="input-label">Insurance Expiry (Optional)</label>
+            <input type="date" id="insurance-input" class="form-input">
+          </div>
+        </div>
+        <!-- Notes / VIN -->
+        <div class="form-group full-width" style="margin-top: 1rem;">
+          <label for="notes-input" class="input-label">Notes / Chassis / VIN (Optional)</label>
+          <textarea id="notes-input" class="form-input" rows="2" placeholder="e.g. Insured by State Farm, Renewal Fee paid via Portal..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancel-modal-btn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" id="save-car-btn" class="btn btn-primary">Save Vehicle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- Toast Notification System -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+  <!-- Main JavaScript File -->
+  <script src="app.js"></script>
+</body>
+</html>
