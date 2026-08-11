@@ -1,6 +1,6 @@
 /**
  * AutoVault - Car Registration & Expiry Tracker
- * Core Application Engine with Excel View, Excel Export, and Arabic Language Support
+ * Core Application Engine with Excel View, Excel Export & Import, and Arabic Language Support
  */
 (function () {
   'use strict';
@@ -51,6 +51,7 @@
       brandSubtitle: 'Vehicle Registration & Expiry Hub',
       langBtn: 'العربية',
       exportExcelBtn: 'Export Excel (.xlsx)',
+      importExcelBtn: 'Import Excel',
       exportJsonBtn: 'Export JSON',
       importJsonBtn: 'Import JSON',
       addCarBtn: '+ Add Vehicle',
@@ -116,6 +117,7 @@
       brandSubtitle: 'مركز متابعة وتجديد استمارات المركبات',
       langBtn: 'English',
       exportExcelBtn: 'تصدير اكسل (.xlsx)',
+      importExcelBtn: 'استيراد اكسل',
       exportJsonBtn: 'تصدير JSON',
       importJsonBtn: 'استيراد JSON',
       addCarBtn: '+ إضافة مركبة',
@@ -192,13 +194,21 @@
     themeToggleBtn: document.getElementById('theme-toggle-btn'),
     langToggleBtn: document.getElementById('lang-toggle-btn'),
     txtLangBtn: document.getElementById('txt-lang-btn'),
+    
+    // Excel Export & Import
     exportExcelBtn: document.getElementById('export-excel-btn'),
     txtExportExcelBtn: document.getElementById('txt-export-excel-btn'),
+    importExcelBtn: document.getElementById('import-excel-btn'),
+    txtImportExcelBtn: document.getElementById('txt-import-excel-btn'),
+    importExcelFileInput: document.getElementById('import-excel-file-input'),
+
+    // JSON Export & Import
     exportBtn: document.getElementById('export-btn'),
     txtExportJsonBtn: document.getElementById('txt-export-json-btn'),
     importBtn: document.getElementById('import-btn'),
     txtImportJsonBtn: document.getElementById('txt-import-json-btn'),
     importFileInput: document.getElementById('import-file-input'),
+
     addCarBtn: document.getElementById('add-car-btn'),
     txtAddCarBtn: document.getElementById('txt-add-car-btn'),
     txtBrandTitle: document.getElementById('txt-brand-title'),
@@ -310,7 +320,7 @@
     if (savedLang && (savedLang === 'en' || savedLang === 'ar')) {
       currentLang = savedLang;
     } else {
-      currentLang = 'en'; // Default
+      currentLang = 'en';
     }
   }
 
@@ -335,6 +345,7 @@
     dom.txtBrandSubtitle.textContent = t.brandSubtitle;
     dom.txtLangBtn.textContent = t.langBtn;
     dom.txtExportExcelBtn.textContent = t.exportExcelBtn;
+    dom.txtImportExcelBtn.textContent = t.importExcelBtn;
     dom.txtExportJsonBtn.textContent = t.exportJsonBtn;
     dom.txtImportJsonBtn.textContent = t.importJsonBtn;
     dom.txtAddCarBtn.textContent = t.addCarBtn;
@@ -387,7 +398,6 @@
       if (rawData) {
         vehicles = JSON.parse(rawData);
       } else {
-        // Legacy fallback or seed initial
         const legacyData = localStorage.getItem('autovault_vehicles_v1');
         if (legacyData) {
           const parsed = JSON.parse(legacyData);
@@ -521,7 +531,6 @@
     if (!dateStr) return '';
     const parts = dateStr.split('-');
     if (parts.length !== 3) return dateStr;
-    // Standard M/D/YYYY format matching screenshot (1/1/2026, 12/31/2026)
     return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}/${parts[0]}`;
   }
 
@@ -750,7 +759,6 @@
     html += `</tbody></table>`;
     dom.excelViewContainer.innerHTML = html;
 
-    // Attach Event Listeners to Action Buttons
     dom.excelViewContainer.querySelectorAll('.renew-btn').forEach(btn => {
       btn.addEventListener('click', () => quickRenewVehicle(btn.dataset.id));
     });
@@ -840,7 +848,6 @@
     const t = i18n[currentLang];
     dom.modalTitle.textContent = t.modalTitleAdd;
 
-    // Generate auto vehicle No
     const nextNo = String(vehicles.length + 1).padStart(3, '0');
     dom.vehicleNoInput.value = nextNo;
     dom.colorPicker.value = '#3B82F6';
@@ -848,7 +855,6 @@
     dom.remarksInput.value = '—';
     dom.previewPlateText.textContent = '12345';
 
-    // Set default issue date = today, expiry date = today + 1 year
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const nextYear = new Date();
@@ -1024,7 +1030,7 @@
   }
 
   /* ==========================================
-     Excel (.xlsx) Export & JSON Import/Export
+     Excel (.xlsx) Export & Import Handlers
      ========================================== */
   function exportToExcel() {
     if (vehicles.length === 0) {
@@ -1067,13 +1073,118 @@
         XLSX.writeFile(workbook, fileName);
         showToast(currentLang === 'ar' ? 'تم تصدير ملف Excel بنجاح!' : 'Exported Excel (.xlsx) file successfully!', 'success');
       } else {
-        // Fallback CSV Download
         exportCSV(dataToExport);
       }
     } catch (err) {
       console.error('Error exporting to Excel:', err);
       showToast('Failed to export Excel file', 'error');
     }
+  }
+
+  function importFromExcel(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+      try {
+        if (!window.XLSX) {
+          showToast('Excel library not loaded.', 'error');
+          return;
+        }
+
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+        if (!Array.isArray(jsonRows) || jsonRows.length === 0) {
+          showToast(currentLang === 'ar' ? 'لم يتم العثور على بيانات في ملف Excel!' : 'No rows found in Excel file.', 'warning');
+          return;
+        }
+
+        const newVehicles = [];
+        jsonRows.forEach((row, i) => {
+          const vehicleNo = String(row['Vehicle No'] || row['رقم المركبة'] || row['No.'] || row['الرقم'] || (i + 1)).padStart(3, '0');
+          const type = String(row['Vehicle Type'] || row['نوع المركبة'] || row['Type'] || 'Sedan');
+          const model = String(row['Model'] || row['الموديل'] || row['Make & Model'] || 'Vehicle');
+          const plate = String(row['Plate No'] || row['رقم اللوحة'] || row['Plate'] || '12345').toUpperCase();
+          const driverName = String(row['Driver Name'] || row['اسم السائق'] || row['Driver'] || '');
+          const registrationNo = String(row['Registration No'] || row['رقم التسجيل'] || row['Registration'] || '');
+          const issueDate = parseExcelDateInput(row['Issue Date'] || row['تاريخ الإصدار']) || getOffsetDateString(-365);
+          const expiryDate = parseExcelDateInput(row['Expiry Date'] || row['تاريخ الانتهاء']) || getOffsetDateString(365);
+          const remarks = String(row['Remarks'] || row['ملاحظات'] || '—');
+
+          if (model && plate) {
+            newVehicles.push({
+              id: 'car_' + Date.now() + '_' + i,
+              vehicleNo,
+              type,
+              model,
+              plate,
+              driverName,
+              registrationNo,
+              issueDate,
+              expiryDate,
+              remarks,
+              color: '#3B82F6',
+              notes: 'Imported from Excel file',
+              createdAt: Date.now()
+            });
+          }
+        });
+
+        if (newVehicles.length === 0) {
+          showToast(currentLang === 'ar' ? 'لم يتم العثور على سجلات صالحة في الملف.' : 'No valid vehicle records found in file.', 'error');
+          return;
+        }
+
+        vehicles = newVehicles;
+        saveVehicles();
+        renderApp();
+        showToast(currentLang === 'ar' ? `تم استيراد ${newVehicles.length} مركبة بنجاح من ملف Excel!` : `Successfully imported ${newVehicles.length} vehicles from Excel!`, 'success');
+      } catch (err) {
+        console.error('Error importing Excel file:', err);
+        showToast(currentLang === 'ar' ? 'فشل استيراد ملف Excel.' : 'Failed to import Excel file.', 'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  }
+
+  function parseExcelDateInput(val) {
+    if (!val) return '';
+    if (val instanceof Date && !isNaN(val.getTime())) {
+      return val.toISOString().split('T')[0];
+    }
+    if (typeof val === 'number') {
+      const dateObj = new Date(Math.round((val - 25569) * 86400 * 1000));
+      if (!isNaN(dateObj.getTime())) {
+        return dateObj.toISOString().split('T')[0];
+      }
+    }
+    const str = String(val).trim();
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      if (parts.length === 3) {
+        const month = parts[0].padStart(2, '0');
+        const day = parts[1].padStart(2, '0');
+        const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+        return `${year}-${month}-${day}`;
+      }
+    }
+    if (str.includes('-')) {
+      const parts = str.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) return str;
+        const month = parts[0].padStart(2, '0');
+        const day = parts[1].padStart(2, '0');
+        const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+        return `${year}-${month}-${day}`;
+      }
+    }
+    return str;
   }
 
   function exportCSV(dataArray) {
@@ -1086,7 +1197,7 @@
       csvRows.push(values.join(','));
     });
 
-    const csvString = '\uFEFF' + csvRows.join('\n'); // Add UTF-8 BOM for Arabic text
+    const csvString = '\uFEFF' + csvRows.join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1199,8 +1310,12 @@
     dom.themeToggleBtn.addEventListener('click', toggleTheme);
     dom.langToggleBtn.addEventListener('click', toggleLanguage);
 
-    // Export Excel / JSON & Import JSON
+    // Export & Import Excel
     dom.exportExcelBtn.addEventListener('click', exportToExcel);
+    dom.importExcelBtn.addEventListener('click', () => dom.importExcelFileInput.click());
+    dom.importExcelFileInput.addEventListener('change', importFromExcel);
+
+    // Export & Import JSON
     dom.exportBtn.addEventListener('click', exportVehiclesJSON);
     dom.importBtn.addEventListener('click', () => dom.importFileInput.click());
     dom.importFileInput.addEventListener('change', importVehiclesJSON);
