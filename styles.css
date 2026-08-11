@@ -241,6 +241,204 @@ body {
   color: var(--text-main);
   background: rgba(255, 255, 255, 0.1);
 }
+/* Excel Green Button */
+.btn-excel {
+  background: linear-gradient(135deg, #107c41, #1f9a55);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 124, 65, 0.35);
+  border: none;
+}
+.btn-excel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 124, 65, 0.5);
+  filter: brightness(1.1);
+}
+
+/* ==========================================
+   Excel Spreadsheet Display View System
+   ========================================== */
+.excel-sheet-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  margin-top: 1rem;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.excel-sheet-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+  min-width: 1100px;
+}
+
+/* Excel Header Styling (Matching uploaded image) */
+.excel-sheet-table th {
+  background: #1F4E78; /* Classic Excel Blue Header */
+  color: #ffffff;
+  font-weight: 700;
+  padding: 0.85rem 1rem;
+  border: 1px solid #143756;
+  white-space: nowrap;
+  user-select: none;
+  font-size: 0.88rem;
+  letter-spacing: 0.02em;
+}
+
+.excel-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.excel-filter-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  font-size: 0.65rem;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.excel-filter-arrow:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Excel Data Cells */
+.excel-sheet-table td {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Zebra Striping & Hover */
+.excel-sheet-table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.excel-sheet-table tbody tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="light"] .excel-sheet-table tbody tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.excel-sheet-table tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+/* Cell Alignment Specials */
+.cell-center { text-align: center; }
+.cell-num { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+.cell-no { font-weight: 700; color: var(--accent-cyan); text-align: center; width: 50px; }
+
+/* Status Badges in Excel Table */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.status-pill.valid {
+  background: var(--status-green-bg);
+  color: var(--status-green);
+  border: 1px solid var(--status-green-border);
+}
+
+.status-pill.expiring {
+  background: var(--status-amber-bg);
+  color: var(--status-amber);
+  border: 1px solid var(--status-amber-border);
+}
+
+.status-pill.expired {
+  background: var(--status-red-bg);
+  color: var(--status-red);
+  border: 1px solid var(--status-red-border);
+}
+
+/* Row Action Buttons inside Excel View */
+.excel-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+/* ==========================================
+   RTL (Right-To-Left) Arabic Language Support
+   ========================================== */
+html[dir="rtl"] {
+  font-family: 'Cairo', 'Plus Jakarta Sans', -apple-system, sans-serif;
+}
+
+html[dir="rtl"] .excel-sheet-table {
+  text-align: right;
+}
+
+html[dir="rtl"] .search-box {
+  padding-left: 1rem;
+  padding-right: 2.5rem;
+}
+
+html[dir="rtl"] .search-icon {
+  left: auto;
+  right: 0.85rem;
+}
+
+html[dir="rtl"] .clear-btn {
+  right: auto;
+  left: 0.75rem;
+}
+
+html[dir="rtl"] .toast-container {
+  right: auto;
+  left: 2rem;
+}
+
+html[dir="rtl"] .toast {
+  border-left: none;
+  border-right: 4px solid var(--card-border);
+}
+
+html[dir="rtl"] .toast.success { border-right-color: var(--status-green); }
+html[dir="rtl"] .toast.info { border-right-color: var(--accent-blue); }
+html[dir="rtl"] .toast.warning { border-right-color: var(--status-amber); }
+html[dir="rtl"] .toast.error { border-right-color: var(--status-red); }
+
+html[dir="rtl"] .form-input,
+html[dir="rtl"] select {
+  text-align: right;
+}
+
+html[dir="rtl"] .plate-number {
+  direction: ltr;
+  display: inline-block;
+}
+
+html[dir="rtl"] .license-plate-preview {
+  direction: ltr;
+}
+
 /* Urgent Alert Banner */
 .alerts-wrapper {
   margin-bottom: 1.5rem;
