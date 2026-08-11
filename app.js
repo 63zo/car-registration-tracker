@@ -1,154 +1,436 @@
 /**
  * AutoVault - Car Registration & Expiry Tracker
- * Core Application Engine
+ * Core Application Engine with Excel View, Excel Export, and Arabic Language Support
  */
 (function () {
   'use strict';
-  // LocalStorage Key Constant
-  const STORAGE_KEY = 'autovault_vehicles_v1';
+
+  // LocalStorage Keys
+  const STORAGE_KEY = 'autovault_vehicles_v2';
   const THEME_KEY = 'autovault_theme_pref';
-  // Sample Pre-populated Vehicles Data
+  const LANG_KEY = 'autovault_lang_pref';
+
+  // Sample Pre-populated Vehicles Data (Matching user screenshot exact values)
   const INITIAL_DEMO_CARS = [
     {
       id: 'car_demo_1',
-      plate: 'DXB-9874',
-      model: 'Porsche 911 GT3 RS',
-      expiryDate: getOffsetDateString(18), // Expiring in 18 days (Amber alert)
-      type: 'Sports',
-      color: '#EF4444',
-      insuranceExpiry: getOffsetDateString(45),
-      notes: 'Track package equipped. Annual service due at Porsche Center.',
-      createdAt: Date.now() - 1000000
-    },
-    {
-      id: 'car_demo_2',
-      plate: 'CA-7890X',
-      model: 'Tesla Model Y Long Range',
-      expiryDate: getOffsetDateString(-5), // Expired 5 days ago (Red alert)
-      type: 'Electric',
+      vehicleNo: '001',
+      type: 'Toyota',
+      model: 'Camry',
+      plate: '12345',
+      driverName: 'Ahmed',
+      registrationNo: '45879',
+      issueDate: '2026-01-01',
+      expiryDate: '2026-12-31',
+      remarks: '—',
       color: '#3B82F6',
-      insuranceExpiry: getOffsetDateString(60),
-      notes: 'Registration renewal pending smog test verification.',
+      notes: 'Primary fleet vehicle',
       createdAt: Date.now() - 2000000
     },
     {
-      id: 'car_demo_3',
-      plate: 'NY-4521K',
-      model: 'Toyota Land Cruiser V8',
-      expiryDate: getOffsetDateString(142), // Active (Green)
-      type: 'SUV',
+      id: 'car_demo_2',
+      vehicleNo: '002',
+      type: 'Nissan',
+      model: 'Patrol',
+      plate: '67890',
+      driverName: 'Mohammed',
+      registrationNo: '45880',
+      issueDate: '2026-02-15',
+      expiryDate: '2026-08-14',
+      remarks: 'Renewal',
       color: '#10B981',
-      insuranceExpiry: getOffsetDateString(180),
-      notes: 'Comprehensive insurance active. Registration valid.',
-      createdAt: Date.now() - 3000000
+      notes: 'Executive SUV',
+      createdAt: Date.now() - 1000000
     }
   ];
-  // Helper: Get YYYY-MM-DD string relative to today
-  function getOffsetDateString(daysOffset) {
-    const d = new Date();
-    d.setDate(d.getDate() + daysOffset);
-    return d.toISOString().split('T')[0];
-  }
+
+  // Internationalization (i18n) Dictionary
+  const i18n = {
+    en: {
+      brandTitle: 'AutoVault',
+      brandSubtitle: 'Vehicle Registration & Expiry Hub',
+      langBtn: 'العربية',
+      exportExcelBtn: 'Export Excel (.xlsx)',
+      exportJsonBtn: 'Export JSON',
+      importJsonBtn: 'Import JSON',
+      addCarBtn: '+ Add Vehicle',
+      statTotal: 'Total Vehicles',
+      statActive: 'Active / Valid',
+      statExpiring: 'Expiring Soon (≤30d)',
+      statExpired: 'Expired',
+      tabAll: 'All',
+      tabActive: 'Active',
+      tabExpiring: 'Expiring Soon',
+      tabExpired: 'Expired',
+      searchPlaceholder: 'Search by model, vehicle no, plate, driver, registration...',
+      sortExpiryAsc: 'Expiry: Soonest First',
+      sortExpiryDesc: 'Expiry: Furthest First',
+      sortModelAsc: 'Model: A to Z',
+      sortPlateAsc: 'Plate: A to Z',
+      sortVehicleNoAsc: 'Vehicle No: Ascending',
+      sortAddedDesc: 'Recently Added',
+      colNo: 'No.',
+      colVehicleNo: 'Vehicle No',
+      colVehicleType: 'Vehicle Type',
+      colModel: 'Model',
+      colPlateNo: 'Plate No',
+      colDriverName: 'Driver Name',
+      colRegistrationNo: 'Registration No',
+      colIssueDate: 'Issue Date',
+      colExpiryDate: 'Expiry Date',
+      colDaysRemaining: 'Days Remaining',
+      colStatus: 'Status',
+      colRemarks: 'Remarks',
+      colActions: 'Actions',
+      statusValid: 'Valid',
+      statusExpiring: 'Expiring Soon',
+      statusExpired: 'Expired',
+      modalTitleAdd: 'Add New Vehicle',
+      modalTitleEdit: 'Edit Vehicle Details',
+      lblVehicleNo: 'Vehicle No',
+      lblVehicleType: 'Vehicle Type / Make',
+      lblModel: 'Model',
+      lblPlate: 'Plate No',
+      lblDriver: 'Driver Name',
+      lblRegistration: 'Registration No',
+      lblIssueDate: 'Issue Date',
+      lblExpiryDate: 'Expiry Date',
+      lblColor: 'Vehicle Color',
+      lblRemarks: 'Remarks',
+      lblNotes: 'Additional Notes / VIN (Optional)',
+      lblLivePreview: 'Live Plate Preview',
+      btnCancel: 'Cancel',
+      btnSave: 'Save Vehicle',
+      emptyTitle: 'No vehicles found',
+      emptyDescription: 'Get started by clicking "+ Add Vehicle" or clearing your search filter.',
+      emptyAction: '+ Add Your First Car',
+      footerText: '© 2026 AutoVault - Vehicle Registration & Expiry System. Local Browser Storage Protected.',
+      renewSuccess: 'Renewed registration (+1 Year)!',
+      deleteConfirm: 'Are you sure you want to delete vehicle',
+      deleteSuccess: 'Vehicle deleted successfully',
+      addSuccess: 'Vehicle added successfully',
+      updateSuccess: 'Vehicle updated successfully'
+    },
+    ar: {
+      brandTitle: 'أوتو فولت',
+      brandSubtitle: 'مركز متابعة وتجديد استمارات المركبات',
+      langBtn: 'English',
+      exportExcelBtn: 'تصدير اكسل (.xlsx)',
+      exportJsonBtn: 'تصدير JSON',
+      importJsonBtn: 'استيراد JSON',
+      addCarBtn: '+ إضافة مركبة',
+      statTotal: 'إجمالي المركبات',
+      statActive: 'صالح / نشط',
+      statExpiring: 'ينتهي قريباً (≤30 يوم)',
+      statExpired: 'منتهي الصلاحية',
+      tabAll: 'الكل',
+      tabActive: 'المركبات الصالحة',
+      tabExpiring: 'تنتهي قريباً',
+      tabExpired: 'المنتهية',
+      searchPlaceholder: 'ابحث بالموديل، رقم المركبة، رقم اللوحة، اسم السائق، رقم التسجيل...',
+      sortExpiryAsc: 'تاريخ الانتهاء: الأقرب أولاً',
+      sortExpiryDesc: 'تاريخ الانتهاء: الأبعد أولاً',
+      sortModelAsc: 'الموديل: أ إلى ي',
+      sortPlateAsc: 'اللوحة: أ إلى ي',
+      sortVehicleNoAsc: 'رقم المركبة: تصاعدي',
+      sortAddedDesc: 'المضافة حديثاً',
+      colNo: 'الرقم',
+      colVehicleNo: 'رقم المركبة',
+      colVehicleType: 'نوع المركبة',
+      colModel: 'الموديل',
+      colPlateNo: 'رقم اللوحة',
+      colDriverName: 'اسم السائق',
+      colRegistrationNo: 'رقم التسجيل',
+      colIssueDate: 'تاريخ الإصدار',
+      colExpiryDate: 'تاريخ الانتهاء',
+      colDaysRemaining: 'الأيام المتبقية',
+      colStatus: 'الحالة',
+      colRemarks: 'ملاحظات',
+      colActions: 'الإجراءات',
+      statusValid: 'صالح',
+      statusExpiring: 'ينتهي قريباً',
+      statusExpired: 'منتهي الصلاحية',
+      modalTitleAdd: 'إضافة مركبة جديدة',
+      modalTitleEdit: 'تعديل بيانات المركبة',
+      lblVehicleNo: 'رقم المركبة',
+      lblVehicleType: 'نوع المركبة / الماركة',
+      lblModel: 'الموديل',
+      lblPlate: 'رقم اللوحة',
+      lblDriver: 'اسم السائق',
+      lblRegistration: 'رقم التسجيل',
+      lblIssueDate: 'تاريخ الإصدار',
+      lblExpiryDate: 'تاريخ الانتهاء',
+      lblColor: 'لون المركبة',
+      lblRemarks: 'ملاحظات',
+      lblNotes: 'ملاحظات إضافية / رقم الهيكل (اختياري)',
+      lblLivePreview: 'معاينة اللوحة المباشرة',
+      btnCancel: 'إلغاء',
+      btnSave: 'حفظ المركبة',
+      emptyTitle: 'لم يتم العثور على مركبات',
+      emptyDescription: 'ابدأ بالنقر على "+ إضافة مركبة" أو قم بمسح فلتر البحث.',
+      emptyAction: '+ أضف سيارتك الأولى',
+      footerText: '© 2026 أوتو فولت - نظام متابعة وتجديد استمارات السيارات. محفوط في المتصفح المحلي.',
+      renewSuccess: 'تم تجديد الاستمارة لممدة سنة كاملة!',
+      deleteConfirm: 'هل أنت تأكد من حذف المركبة',
+      deleteSuccess: 'تم حذف المركبة بنجاح',
+      addSuccess: 'تمت إضافة المركبة بنجاح',
+      updateSuccess: 'تم تحديث بيانات المركبة بنجاح'
+    }
+  };
+
   // App State
   let vehicles = [];
   let currentFilter = 'all';
   let searchQuery = '';
   let currentSort = 'expiry-asc';
-  let currentView = 'grid'; // 'grid' or 'list'
+  let currentView = 'excel'; // 'excel', 'grid', 'list'
+  let currentLang = 'en'; // 'en', 'ar'
+
   // DOM Selectors
   const dom = {
+    // Header & Language
     themeToggleBtn: document.getElementById('theme-toggle-btn'),
+    langToggleBtn: document.getElementById('lang-toggle-btn'),
+    txtLangBtn: document.getElementById('txt-lang-btn'),
+    exportExcelBtn: document.getElementById('export-excel-btn'),
+    txtExportExcelBtn: document.getElementById('txt-export-excel-btn'),
     exportBtn: document.getElementById('export-btn'),
+    txtExportJsonBtn: document.getElementById('txt-export-json-btn'),
     importBtn: document.getElementById('import-btn'),
+    txtImportJsonBtn: document.getElementById('txt-import-json-btn'),
     importFileInput: document.getElementById('import-file-input'),
     addCarBtn: document.getElementById('add-car-btn'),
-    
-    // Stats
+    txtAddCarBtn: document.getElementById('txt-add-car-btn'),
+    txtBrandTitle: document.getElementById('txt-brand-title'),
+    txtBrandSubtitle: document.getElementById('txt-brand-subtitle'),
+
+    // Stats Labels & Values
+    txtStatTotal: document.getElementById('txt-stat-total'),
+    txtStatActive: document.getElementById('txt-stat-active'),
+    txtStatExpiring: document.getElementById('txt-stat-expiring'),
+    txtStatExpired: document.getElementById('txt-stat-expired'),
     statTotal: document.getElementById('stat-total-count'),
     statActive: document.getElementById('stat-active-count'),
     statExpiring: document.getElementById('stat-expiring-count'),
     statExpired: document.getElementById('stat-expired-count'),
-    // Alerts
+
+    // Alerts Container
     urgentAlertsContainer: document.getElementById('urgent-alerts-container'),
-    // Controls
+
+    // Toolbar Controls
     searchInput: document.getElementById('search-input'),
     clearSearchBtn: document.getElementById('clear-search-btn'),
     filterTabs: document.querySelectorAll('.filter-tab'),
+    tabAll: document.getElementById('tab-all'),
+    tabActive: document.getElementById('tab-active'),
+    tabExpiring: document.getElementById('tab-expiring'),
+    tabExpired: document.getElementById('tab-expired'),
     sortSelect: document.getElementById('sort-select'),
+    optSortExpiryAsc: document.getElementById('opt-sort-expiry-asc'),
+    optSortExpiryDesc: document.getElementById('opt-sort-expiry-desc'),
+    optSortModelAsc: document.getElementById('opt-sort-model-asc'),
+    optSortPlateAsc: document.getElementById('opt-sort-plate-asc'),
+    optSortVehicleNoAsc: document.getElementById('opt-sort-vehicleno-asc'),
+    optSortAddedDesc: document.getElementById('opt-sort-added-desc'),
+
+    // View Toggles
+    viewExcelBtn: document.getElementById('view-excel-btn'),
     viewGridBtn: document.getElementById('view-grid-btn'),
     viewListBtn: document.getElementById('view-list-btn'),
-    // Main List & Empty State
+
+    // Main Containers & Empty State
     vehiclesContainer: document.getElementById('vehicles-container'),
+    excelViewContainer: document.getElementById('excel-view-container'),
     emptyState: document.getElementById('empty-state'),
     emptyTitle: document.getElementById('empty-title'),
     emptyDescription: document.getElementById('empty-description'),
     emptyActionBtn: document.getElementById('empty-action-btn'),
-    // Modal & Form
+
+    // Modal & Form Inputs
     carModal: document.getElementById('car-modal'),
     modalTitle: document.getElementById('modal-title'),
     closeModalBtn: document.getElementById('close-modal-btn'),
     cancelModalBtn: document.getElementById('cancel-modal-btn'),
+    txtCancelBtn: document.getElementById('txt-cancel-btn'),
+    saveCarBtn: document.getElementById('save-car-btn'),
+    txtSaveBtn: document.getElementById('txt-save-btn'),
     carForm: document.getElementById('car-form'),
+
     carIdInput: document.getElementById('car-id'),
-    plateInput: document.getElementById('plate-input'),
-    modelInput: document.getElementById('model-input'),
-    expiryInput: document.getElementById('expiry-input'),
+    vehicleNoInput: document.getElementById('vehicleno-input'),
     typeInput: document.getElementById('type-input'),
+    modelInput: document.getElementById('model-input'),
+    plateInput: document.getElementById('plate-input'),
+    driverInput: document.getElementById('driver-input'),
+    registrationInput: document.getElementById('registration-input'),
+    issueInput: document.getElementById('issue-input'),
+    expiryInput: document.getElementById('expiry-input'),
     colorPicker: document.getElementById('color-picker'),
     colorInput: document.getElementById('color-input'),
-    insuranceInput: document.getElementById('insurance-input'),
+    remarksInput: document.getElementById('remarks-input'),
     notesInput: document.getElementById('notes-input'),
-    
-    // Live Plate Preview
+
+    // Form Labels
+    lblVehicleNo: document.getElementById('lbl-vehicleno'),
+    lblVehicleType: document.getElementById('lbl-vehicletype'),
+    lblModel: document.getElementById('lbl-model'),
+    lblPlate: document.getElementById('lbl-plate'),
+    lblDriver: document.getElementById('lbl-driver'),
+    lblRegistration: document.getElementById('lbl-registration'),
+    lblIssueDate: document.getElementById('lbl-issuedate'),
+    lblExpiryDate: document.getElementById('lbl-expirydate'),
+    lblColor: document.getElementById('lbl-color'),
+    lblRemarks: document.getElementById('lbl-remarks'),
+    lblNotes: document.getElementById('lbl-notes'),
+    txtLivePreviewLabel: document.getElementById('txt-live-preview-label'),
     previewPlateText: document.getElementById('preview-plate-text'),
-    
-    // Toast
+
+    // Footer & Toast
+    txtFooter: document.getElementById('txt-footer'),
     toastContainer: document.getElementById('toast-container')
   };
+
   /* ==========================================
      Initialization & Storage
      ========================================== */
   function init() {
+    loadLanguage();
     loadTheme();
     loadVehicles();
     setupEventListeners();
+    applyLanguage();
     renderApp();
-    
-    // Set default date picker min/defaults
-    if (dom.expiryInput) {
-      const todayStr = new Date().toISOString().split('T')[0];
-      dom.expiryInput.setAttribute('min', '2000-01-01');
-    }
+
     // Auto update countdown every minute
     setInterval(renderApp, 60000);
   }
+
+  function loadLanguage() {
+    const savedLang = localStorage.getItem(LANG_KEY);
+    if (savedLang && (savedLang === 'en' || savedLang === 'ar')) {
+      currentLang = savedLang;
+    } else {
+      currentLang = 'en'; // Default
+    }
+  }
+
+  function toggleLanguage() {
+    currentLang = currentLang === 'en' ? 'ar' : 'en';
+    localStorage.setItem(LANG_KEY, currentLang);
+    applyLanguage();
+    renderApp();
+    showToast(currentLang === 'ar' ? 'تم تغيير اللغة إلى العربية' : 'Switched language to English', 'info');
+  }
+
+  function applyLanguage() {
+    const t = i18n[currentLang];
+    const isAr = currentLang === 'ar';
+
+    // HTML lang and direction
+    document.documentElement.setAttribute('lang', currentLang);
+    document.documentElement.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+
+    // Header & Buttons
+    dom.txtBrandTitle.textContent = t.brandTitle;
+    dom.txtBrandSubtitle.textContent = t.brandSubtitle;
+    dom.txtLangBtn.textContent = t.langBtn;
+    dom.txtExportExcelBtn.textContent = t.exportExcelBtn;
+    dom.txtExportJsonBtn.textContent = t.exportJsonBtn;
+    dom.txtImportJsonBtn.textContent = t.importJsonBtn;
+    dom.txtAddCarBtn.textContent = t.addCarBtn;
+
+    // Stats
+    dom.txtStatTotal.textContent = t.statTotal;
+    dom.txtStatActive.textContent = t.statActive;
+    dom.txtStatExpiring.textContent = t.statExpiring;
+    dom.txtStatExpired.textContent = t.statExpired;
+
+    // Filter Tabs
+    dom.tabAll.textContent = t.tabAll;
+    dom.tabActive.textContent = t.tabActive;
+    dom.tabExpiring.textContent = t.tabExpiring;
+    dom.tabExpired.textContent = t.tabExpired;
+
+    // Search & Sort
+    dom.searchInput.placeholder = t.searchPlaceholder;
+    dom.optSortExpiryAsc.textContent = t.sortExpiryAsc;
+    dom.optSortExpiryDesc.textContent = t.sortExpiryDesc;
+    dom.optSortModelAsc.textContent = t.sortModelAsc;
+    dom.optSortPlateAsc.textContent = t.sortPlateAsc;
+    dom.optSortVehicleNoAsc.textContent = t.sortVehicleNoAsc;
+    dom.optSortAddedDesc.textContent = t.sortAddedDesc;
+
+    // Modal Form Labels
+    if (dom.lblVehicleNo.childNodes[0]) dom.lblVehicleNo.childNodes[0].nodeValue = t.lblVehicleNo + ' ';
+    if (dom.lblVehicleType.childNodes[0]) dom.lblVehicleType.childNodes[0].nodeValue = t.lblVehicleType + ' ';
+    if (dom.lblModel.childNodes[0]) dom.lblModel.childNodes[0].nodeValue = t.lblModel + ' ';
+    if (dom.lblPlate.childNodes[0]) dom.lblPlate.childNodes[0].nodeValue = t.lblPlate + ' ';
+    if (dom.lblDriver.childNodes[0]) dom.lblDriver.childNodes[0].nodeValue = t.lblDriver + ' ';
+    if (dom.lblRegistration.childNodes[0]) dom.lblRegistration.childNodes[0].nodeValue = t.lblRegistration + ' ';
+    if (dom.lblIssueDate.childNodes[0]) dom.lblIssueDate.childNodes[0].nodeValue = t.lblIssueDate + ' ';
+    if (dom.lblExpiryDate.childNodes[0]) dom.lblExpiryDate.childNodes[0].nodeValue = t.lblExpiryDate + ' ';
+    
+    dom.lblColor.textContent = t.lblColor;
+    dom.lblRemarks.textContent = t.lblRemarks;
+    dom.lblNotes.textContent = t.lblNotes;
+    dom.txtLivePreviewLabel.textContent = t.lblLivePreview;
+    dom.txtCancelBtn.textContent = t.btnCancel;
+    dom.txtSaveBtn.textContent = t.btnSave;
+
+    // Footer
+    dom.txtFooter.textContent = t.footerText;
+  }
+
   function loadVehicles() {
     try {
       const rawData = localStorage.getItem(STORAGE_KEY);
       if (rawData) {
         vehicles = JSON.parse(rawData);
       } else {
-        // Seed initial data on first visit
-        vehicles = [...INITIAL_DEMO_CARS];
+        // Legacy fallback or seed initial
+        const legacyData = localStorage.getItem('autovault_vehicles_v1');
+        if (legacyData) {
+          const parsed = JSON.parse(legacyData);
+          vehicles = parsed.map((v, i) => ({
+            id: v.id || 'car_' + Date.now() + i,
+            vehicleNo: String(i + 1).padStart(3, '0'),
+            type: v.type || 'Sedan',
+            model: v.model || 'Vehicle',
+            plate: v.plate || '12345',
+            driverName: 'Driver ' + (i + 1),
+            registrationNo: String(45879 + i),
+            issueDate: '2026-01-01',
+            expiryDate: v.expiryDate || '2026-12-31',
+            remarks: '—',
+            color: v.color || '#3B82F6',
+            notes: v.notes || '',
+            createdAt: v.createdAt || Date.now()
+          }));
+        } else {
+          vehicles = [...INITIAL_DEMO_CARS];
+        }
         saveVehicles();
       }
     } catch (e) {
-      console.error('Error loading vehicles from localStorage:', e);
+      console.error('Error loading vehicles:', e);
       vehicles = [...INITIAL_DEMO_CARS];
     }
   }
+
   function saveVehicles() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
     } catch (e) {
-      console.error('Error saving vehicles to localStorage:', e);
+      console.error('Error saving vehicles:', e);
       showToast('Failed to save to browser storage!', 'error');
     }
   }
+
   function loadTheme() {
     const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
   }
+
   function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -156,49 +438,59 @@
     localStorage.setItem(THEME_KEY, newTheme);
     showToast(`Switched to ${newTheme} theme`, 'info');
   }
+
   /* ==========================================
      Calculation & Expiry Helper Logic
      ========================================== */
   function getExpiryStatusInfo(expiryDateStr) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const expiryDate = new Date(expiryDateStr + 'T00:00:00');
+
+    let expiryDate = new Date(expiryDateStr + 'T00:00:00');
+    if (isNaN(expiryDate.getTime())) {
+      expiryDate = new Date();
+    }
+
     const diffTime = expiryDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const t = i18n[currentLang];
     let status = 'active'; // 'active', 'expiring', 'expired'
-    let statusLabel = 'Valid / Active';
+    let statusLabel = t.statusValid;
     let badgeClass = 'badge-active';
     let progressFillClass = 'fill-green';
+
     if (diffDays < 0) {
       status = 'expired';
-      statusLabel = 'EXPIRED';
+      statusLabel = t.statusExpired;
       badgeClass = 'badge-expired';
       progressFillClass = 'fill-red';
     } else if (diffDays <= 30) {
       status = 'expiring';
-      statusLabel = 'EXPIRING SOON';
+      statusLabel = t.statusExpiring;
       badgeClass = 'badge-expiring';
       progressFillClass = 'fill-amber';
     }
-    // Time text display
+
     let timeText = '';
+    const absDays = Math.abs(diffDays);
     if (diffDays < 0) {
-      const absDays = Math.abs(diffDays);
-      timeText = `Expired ${absDays} day${absDays === 1 ? '' : 's'} ago`;
+      timeText = currentLang === 'ar' ? `انتهى منذ ${absDays} يوم` : `Expired ${absDays} day${absDays === 1 ? '' : 's'} ago`;
     } else if (diffDays === 0) {
-      timeText = 'Expires TODAY!';
+      timeText = currentLang === 'ar' ? 'ينتهي اليوم!' : 'Expires TODAY!';
     } else if (diffDays === 1) {
-      timeText = 'Expires Tomorrow!';
+      timeText = currentLang === 'ar' ? 'ينتهي غداً!' : 'Expires Tomorrow!';
     } else {
-      timeText = `${diffDays} Days left`;
+      timeText = currentLang === 'ar' ? `متبقي ${diffDays} يوم` : `${diffDays} Days left`;
     }
-    // Progress percentage calculation (Assumes 365 day cycle max visual fill)
+
     let percentRemaining = 100;
     if (diffDays < 0) {
       percentRemaining = 0;
     } else {
       percentRemaining = Math.min(100, Math.max(5, Math.round((diffDays / 365) * 100)));
     }
+
     return {
       diffDays,
       status,
@@ -210,53 +502,71 @@
       formattedDate: formatDateDisplay(expiryDateStr)
     };
   }
+
   function formatDateDisplay(dateStr) {
     if (!dateStr) return '';
     const parts = dateStr.split('-');
     if (parts.length !== 3) return dateStr;
     const dateObj = new Date(dateStr + 'T00:00:00');
-    return dateObj.toLocaleDateString(undefined, {
+    if (isNaN(dateObj.getTime())) return dateStr;
+
+    return dateObj.toLocaleDateString(currentLang === 'ar' ? 'ar-SA' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
   }
+
+  function formatDateForExcel(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    // Standard M/D/YYYY format matching screenshot (1/1/2026, 12/31/2026)
+    return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}/${parts[0]}`;
+  }
+
   /* ==========================================
      Render Logic
      ========================================== */
   function renderApp() {
     renderStats();
     renderUrgentAlerts();
-    renderVehicleList();
+    renderMainViews();
   }
+
   function renderStats() {
     let total = vehicles.length;
     let active = 0;
     let expiring = 0;
     let expired = 0;
+
     vehicles.forEach(v => {
       const statusInfo = getExpiryStatusInfo(v.expiryDate);
       if (statusInfo.status === 'active') active++;
       else if (statusInfo.status === 'expiring') expiring++;
       else if (statusInfo.status === 'expired') expired++;
     });
+
     dom.statTotal.textContent = total;
     dom.statActive.textContent = active;
     dom.statExpiring.textContent = expiring;
     dom.statExpired.textContent = expired;
   }
+
   function renderUrgentAlerts() {
     dom.urgentAlertsContainer.innerHTML = '';
     const urgentVehicles = vehicles
       .map(v => ({ vehicle: v, info: getExpiryStatusInfo(v.expiryDate) }))
       .filter(item => item.info.status === 'expired' || item.info.status === 'expiring')
       .sort((a, b) => a.info.diffDays - b.info.diffDays);
+
     if (urgentVehicles.length === 0) return;
-    // Render urgent notice card for top urgent car
+
     urgentVehicles.slice(0, 2).forEach(item => {
       const v = item.vehicle;
       const info = item.info;
       const isExpired = info.status === 'expired';
+
       const banner = document.createElement('div');
       banner.className = `alert-banner ${isExpired ? 'expired' : 'expiring'}`;
       banner.innerHTML = `
@@ -267,11 +577,11 @@
             <line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
           <div>
-            <strong>${v.model} (${v.plate})</strong>: ${info.timeText} (${info.formattedDate}).
+            <strong>${escapeHtml(v.model)} (${escapeHtml(v.plate)})</strong>: ${info.timeText} (${info.formattedDate}).
           </div>
         </div>
         <button class="btn btn-sm btn-secondary renew-alert-btn" data-id="${v.id}">
-          +1 Year Renew
+          +1 ${currentLang === 'ar' ? 'سنة تجديد' : 'Year Renew'}
         </button>
       `;
       banner.querySelector('.renew-alert-btn').addEventListener('click', () => {
@@ -280,25 +590,31 @@
       dom.urgentAlertsContainer.appendChild(banner);
     });
   }
+
   function getFilteredAndSortedVehicles() {
     return vehicles
       .filter(v => {
         const info = getExpiryStatusInfo(v.expiryDate);
-        
+
         // Filter tabs
         if (currentFilter === 'active' && info.status !== 'active') return false;
         if (currentFilter === 'expiring' && info.status !== 'expiring') return false;
         if (currentFilter === 'expired' && info.status !== 'expired') return false;
-        // Search query
+
+        // Search query: Search across Model, Vehicle No, Plate, Driver, Registration No, Type
         if (searchQuery.trim() !== '') {
           const q = searchQuery.toLowerCase().trim();
-          const matchPlate = v.plate.toLowerCase().includes(q);
-          const matchModel = v.model.toLowerCase().includes(q);
+          const matchModel = (v.model || '').toLowerCase().includes(q);
+          const matchVehicleNo = (v.vehicleNo || '').toLowerCase().includes(q);
+          const matchPlate = (v.plate || '').toLowerCase().includes(q);
+          const matchDriver = (v.driverName || '').toLowerCase().includes(q);
+          const matchRegistration = (v.registrationNo || '').toLowerCase().includes(q);
           const matchType = (v.type || '').toLowerCase().includes(q);
-          const matchNotes = (v.notes || '').toLowerCase().includes(q);
-          const matchColor = (v.color || '').toLowerCase().includes(q);
-          return matchPlate || matchModel || matchType || matchNotes || matchColor;
+          const matchRemarks = (v.remarks || '').toLowerCase().includes(q);
+
+          return matchModel || matchVehicleNo || matchPlate || matchDriver || matchRegistration || matchType || matchRemarks;
         }
+
         return true;
       })
       .sort((a, b) => {
@@ -307,60 +623,167 @@
         } else if (currentSort === 'expiry-desc') {
           return new Date(b.expiryDate) - new Date(a.expiryDate);
         } else if (currentSort === 'model-asc') {
-          return a.model.localeCompare(b.model);
+          return (a.model || '').localeCompare(b.model || '');
         } else if (currentSort === 'plate-asc') {
-          return a.plate.localeCompare(b.plate);
+          return (a.plate || '').localeCompare(b.plate || '');
+        } else if (currentSort === 'vehicleNo-asc') {
+          return (a.vehicleNo || '').localeCompare(b.vehicleNo || '', undefined, { numeric: true });
         } else if (currentSort === 'added-desc') {
           return (b.createdAt || 0) - (a.createdAt || 0);
         }
         return 0;
       });
   }
-  function renderVehicleList() {
+
+  function renderMainViews() {
     const list = getFilteredAndSortedVehicles();
-    dom.vehiclesContainer.innerHTML = '';
-    if (currentView === 'list') {
-      dom.vehiclesContainer.classList.add('list-view');
-    } else {
-      dom.vehiclesContainer.classList.remove('list-view');
-    }
+    const t = i18n[currentLang];
+
     if (list.length === 0) {
       dom.vehiclesContainer.classList.add('hidden');
+      dom.excelViewContainer.classList.add('hidden');
       dom.emptyState.classList.remove('hidden');
+
       if (vehicles.length === 0) {
-        dom.emptyTitle.textContent = 'No vehicles added yet';
-        dom.emptyDescription.textContent = 'Start by adding your first vehicle details and registration date.';
+        dom.emptyTitle.textContent = t.emptyTitle;
+        dom.emptyDescription.textContent = t.emptyDescription;
       } else {
-        dom.emptyTitle.textContent = 'No matching vehicles found';
-        dom.emptyDescription.textContent = 'Try adjusting your search query or filter tab.';
+        dom.emptyTitle.textContent = currentLang === 'ar' ? 'لا توجد مركبات مطابقة' : 'No matching vehicles found';
+        dom.emptyDescription.textContent = currentLang === 'ar' ? 'جرّب تعديل عبارة البحث أو اختيار تبويب آخر.' : 'Try adjusting your search query or filter tab.';
       }
+      dom.emptyActionBtn.textContent = t.emptyAction;
       return;
     }
+
     dom.emptyState.classList.add('hidden');
-    dom.vehiclesContainer.classList.remove('hidden');
-    list.forEach(vehicle => {
-      const card = createVehicleCardElement(vehicle);
-      dom.vehiclesContainer.appendChild(card);
+
+    if (currentView === 'excel') {
+      dom.vehiclesContainer.classList.add('hidden');
+      dom.excelViewContainer.classList.remove('hidden');
+      renderExcelTable(list);
+    } else {
+      dom.excelViewContainer.classList.add('hidden');
+      dom.vehiclesContainer.classList.remove('hidden');
+
+      if (currentView === 'list') {
+        dom.vehiclesContainer.classList.add('list-view');
+      } else {
+        dom.vehiclesContainer.classList.remove('list-view');
+      }
+
+      dom.vehiclesContainer.innerHTML = '';
+      list.forEach(vehicle => {
+        const card = createVehicleCardElement(vehicle);
+        dom.vehiclesContainer.appendChild(card);
+      });
+    }
+  }
+
+  /* ==========================================
+     Excel Table Rendering Component
+     ========================================== */
+  function renderExcelTable(list) {
+    const t = i18n[currentLang];
+
+    let html = `
+      <table class="excel-sheet-table">
+        <thead>
+          <tr>
+            <th><div class="excel-header-content"><span>${t.colNo}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colVehicleNo}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colVehicleType}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colModel}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colPlateNo}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colDriverName}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colRegistrationNo}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colIssueDate}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colExpiryDate}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colDaysRemaining}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colStatus}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colRemarks}</span> <span class="excel-filter-arrow">▼</span></div></th>
+            <th><div class="excel-header-content"><span>${t.colActions}</span></div></th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    list.forEach((v, index) => {
+      const info = getExpiryStatusInfo(v.expiryDate);
+      let statusText = t.statusValid;
+      let statusPillClass = 'valid';
+
+      if (info.status === 'expiring') {
+        statusText = t.statusExpiring;
+        statusPillClass = 'expiring';
+      } else if (info.status === 'expired') {
+        statusText = t.statusExpired;
+        statusPillClass = 'expired';
+      }
+
+      html += `
+        <tr>
+          <td class="cell-no">${index + 1}</td>
+          <td class="cell-center cell-num">${escapeHtml(v.vehicleNo || '')}</td>
+          <td>${escapeHtml(v.type || '')}</td>
+          <td><strong>${escapeHtml(v.model || '')}</strong></td>
+          <td class="cell-center cell-num">${escapeHtml(v.plate || '')}</td>
+          <td>${escapeHtml(v.driverName || '')}</td>
+          <td class="cell-center cell-num">${escapeHtml(v.registrationNo || '')}</td>
+          <td class="cell-center cell-num">${formatDateForExcel(v.issueDate)}</td>
+          <td class="cell-center cell-num">${formatDateForExcel(v.expiryDate)}</td>
+          <td class="cell-center cell-num"><strong>${info.diffDays}</strong></td>
+          <td class="cell-center">
+            <span class="status-pill ${statusPillClass}">${statusText}</span>
+          </td>
+          <td>${escapeHtml(v.remarks || '—')}</td>
+          <td>
+            <div class="excel-actions-cell">
+              <button class="btn btn-secondary btn-sm renew-btn" title="Renew +1 Year" data-id="${v.id}">+1Yr</button>
+              <button class="btn btn-secondary btn-sm edit-btn" title="Edit" data-id="${v.id}">✏️</button>
+              <button class="btn btn-secondary btn-sm delete-btn" title="Delete" data-id="${v.id}" style="color: var(--status-red);">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `</tbody></table>`;
+    dom.excelViewContainer.innerHTML = html;
+
+    // Attach Event Listeners to Action Buttons
+    dom.excelViewContainer.querySelectorAll('.renew-btn').forEach(btn => {
+      btn.addEventListener('click', () => quickRenewVehicle(btn.dataset.id));
+    });
+    dom.excelViewContainer.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => openModalForEdit(btn.dataset.id));
+    });
+    dom.excelViewContainer.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteVehicle(btn.dataset.id));
     });
   }
+
   function createVehicleCardElement(v) {
     const info = getExpiryStatusInfo(v.expiryDate);
+    const t = i18n[currentLang];
+
     const card = document.createElement('div');
     card.className = `car-card status-${info.status}`;
     card.innerHTML = `
       <div class="car-card-header">
         <div class="license-plate">
-          <div class="plate-header">REGISTRATION PLATE</div>
-          <div class="plate-number">${escapeHtml(v.plate)}</div>
+          <div class="plate-header">VEHICLE NO: ${escapeHtml(v.vehicleNo || '000')}</div>
+          <div class="plate-number">${escapeHtml(v.plate || '')}</div>
         </div>
         <div class="car-title-row">
           <div>
-            <h3 class="car-model-name">${escapeHtml(v.model)}</h3>
-            <div style="margin-top: 0.35rem; display: flex; gap: 0.5rem; align-items: center;">
+            <h3 class="car-model-name">${escapeHtml(v.model || '')}</h3>
+            <div style="margin-top: 0.35rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
               <span class="type-badge">
                 <span class="color-dot" style="background-color: ${escapeHtml(v.color || '#3B82F6')}"></span>
                 ${escapeHtml(v.type || 'Vehicle')}
               </span>
+              ${v.driverName ? `<span class="type-badge">👤 ${escapeHtml(v.driverName)}</span>` : ''}
+              ${v.registrationNo ? `<span class="type-badge">📋 #${escapeHtml(v.registrationNo)}</span>` : ''}
             </div>
           </div>
           <span class="status-badge ${info.badgeClass}">
@@ -371,7 +794,7 @@
       </div>
       <div class="countdown-box">
         <div class="countdown-header">
-          <span class="countdown-title">Registration Expiry</span>
+          <span class="countdown-title">${t.colExpiryDate}</span>
           <span class="countdown-date">${info.formattedDate}</span>
         </div>
         <div class="time-left-big ${info.status === 'expired' ? 'text-red' : info.status === 'expiring' ? 'text-amber' : 'text-green'}">
@@ -381,16 +804,17 @@
           <div class="progress-bar-fill ${info.progressFillClass}" style="width: ${info.percentRemaining}%;"></div>
         </div>
       </div>
-      ${v.notes ? `<p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4;">${escapeHtml(v.notes)}</p>` : ''}
+      ${v.remarks && v.remarks !== '—' ? `<p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;"><strong>${t.colRemarks}:</strong> ${escapeHtml(v.remarks)}</p>` : ''}
+      ${v.notes ? `<p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 1rem; line-height: 1.4;">${escapeHtml(v.notes)}</p>` : ''}
       <div class="car-card-actions">
         <button class="btn btn-secondary btn-sm renew-btn" title="Extend expiry date by 1 Year">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-          <span>+1 Year</span>
+          <span>+1 ${currentLang === 'ar' ? 'سنة' : 'Year'}</span>
         </button>
         <div class="action-btn-group">
           <button class="btn btn-secondary btn-sm edit-btn" title="Edit vehicle details">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            <span>Edit</span>
+            <span>${currentLang === 'ar' ? 'تعديل' : 'Edit'}</span>
           </button>
           <button class="btn btn-secondary btn-sm delete-btn" title="Delete vehicle" style="color: var(--status-red);">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -398,116 +822,162 @@
         </div>
       </div>
     `;
-    // Action Listener Binds
+
     card.querySelector('.renew-btn').addEventListener('click', () => quickRenewVehicle(v.id));
     card.querySelector('.edit-btn').addEventListener('click', () => openModalForEdit(v.id));
     card.querySelector('.delete-btn').addEventListener('click', () => deleteVehicle(v.id));
+
     return card;
   }
+
   /* ==========================================
-     CRUD Operations
+     CRUD Operations & Form Handlers
      ========================================== */
   function openModalForAdd() {
     dom.carIdInput.value = '';
     dom.carForm.reset();
-    dom.modalTitle.textContent = 'Add New Vehicle';
+
+    const t = i18n[currentLang];
+    dom.modalTitle.textContent = t.modalTitleAdd;
+
+    // Generate auto vehicle No
+    const nextNo = String(vehicles.length + 1).padStart(3, '0');
+    dom.vehicleNoInput.value = nextNo;
     dom.colorPicker.value = '#3B82F6';
     dom.colorInput.value = 'Blue';
-    dom.previewPlateText.textContent = 'ABC-1234';
+    dom.remarksInput.value = '—';
+    dom.previewPlateText.textContent = '12345';
+
+    // Set default issue date = today, expiry date = today + 1 year
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const nextYear = new Date();
+    nextYear.setFullYear(today.getFullYear() + 1);
+    const nextYearStr = nextYear.toISOString().split('T')[0];
+
+    dom.issueInput.value = todayStr;
+    dom.expiryInput.value = nextYearStr;
+
     clearFormErrors();
     dom.carModal.classList.remove('hidden');
-    dom.plateInput.focus();
+    dom.vehicleNoInput.focus();
   }
+
   function openModalForEdit(id) {
     const v = vehicles.find(item => item.id === id);
     if (!v) return;
+
+    const t = i18n[currentLang];
     clearFormErrors();
+
     dom.carIdInput.value = v.id;
-    dom.plateInput.value = v.plate;
-    dom.modelInput.value = v.model;
-    dom.expiryInput.value = v.expiryDate;
-    dom.typeInput.value = v.type || 'Sedan';
+    dom.vehicleNoInput.value = v.vehicleNo || '';
+    dom.typeInput.value = v.type || '';
+    dom.modelInput.value = v.model || '';
+    dom.plateInput.value = v.plate || '';
+    dom.driverInput.value = v.driverName || '';
+    dom.registrationInput.value = v.registrationNo || '';
+    dom.issueInput.value = v.issueDate || '';
+    dom.expiryInput.value = v.expiryDate || '';
     dom.colorPicker.value = v.color || '#3B82F6';
     dom.colorInput.value = v.colorName || 'Blue';
-    dom.insuranceInput.value = v.insuranceExpiry || '';
+    dom.remarksInput.value = v.remarks || '—';
     dom.notesInput.value = v.notes || '';
-    dom.previewPlateText.textContent = v.plate.toUpperCase();
-    dom.modalTitle.textContent = 'Edit Vehicle Details';
+    dom.previewPlateText.textContent = (v.plate || '12345').toUpperCase();
+
+    dom.modalTitle.textContent = t.modalTitleEdit;
     dom.carModal.classList.remove('hidden');
   }
+
   function closeModal() {
     dom.carModal.classList.add('hidden');
     clearFormErrors();
   }
+
   function clearFormErrors() {
     document.querySelectorAll('.error-msg').forEach(el => el.classList.remove('visible'));
     document.querySelectorAll('.form-input').forEach(el => el.classList.remove('is-invalid'));
   }
+
   function handleFormSubmit(e) {
     e.preventDefault();
     clearFormErrors();
-    const plate = dom.plateInput.value.trim();
+
+    const vehicleNo = dom.vehicleNoInput.value.trim();
+    const type = dom.typeInput.value.trim();
     const model = dom.modelInput.value.trim();
+    const plate = dom.plateInput.value.trim();
+    const driverName = dom.driverInput.value.trim();
+    const registrationNo = dom.registrationInput.value.trim();
+    const issueDate = dom.issueInput.value;
     const expiryDate = dom.expiryInput.value;
-    const type = dom.typeInput.value;
     const color = dom.colorPicker.value;
     const colorName = dom.colorInput.value.trim();
-    const insuranceExpiry = dom.insuranceInput.value;
+    const remarks = dom.remarksInput.value.trim() || '—';
     const notes = dom.notesInput.value.trim();
     const existingId = dom.carIdInput.value;
+
     let isValid = true;
-    if (!plate) {
-      showFieldError('plate', 'Please enter a valid license plate number');
-      isValid = false;
-    }
-    if (!model) {
-      showFieldError('model', 'Please enter car make & model');
-      isValid = false;
-    }
-    if (!expiryDate) {
-      showFieldError('expiry', 'Please select a valid expiry date');
-      isValid = false;
-    }
+    if (!vehicleNo) { showFieldError('vehicleno', 'Please enter vehicle number'); isValid = false; }
+    if (!type) { showFieldError('type', 'Please enter vehicle type'); isValid = false; }
+    if (!model) { showFieldError('model', 'Please enter model'); isValid = false; }
+    if (!plate) { showFieldError('plate', 'Please enter plate number'); isValid = false; }
+    if (!driverName) { showFieldError('driver', 'Please enter driver name'); isValid = false; }
+    if (!registrationNo) { showFieldError('registration', 'Please enter registration number'); isValid = false; }
+    if (!issueDate) { showFieldError('issue', 'Please select issue date'); isValid = false; }
+    if (!expiryDate) { showFieldError('expiry', 'Please select expiry date'); isValid = false; }
+
     if (!isValid) return;
+
+    const t = i18n[currentLang];
+
     if (existingId) {
-      // Update existing
       const index = vehicles.findIndex(v => v.id === existingId);
       if (index !== -1) {
         vehicles[index] = {
           ...vehicles[index],
-          plate: plate.toUpperCase(),
-          model,
-          expiryDate,
+          vehicleNo,
           type,
+          model,
+          plate: plate.toUpperCase(),
+          driverName,
+          registrationNo,
+          issueDate,
+          expiryDate,
           color,
           colorName,
-          insuranceExpiry,
+          remarks,
           notes,
           updatedAt: Date.now()
         };
-        showToast(`Updated ${model} (${plate.toUpperCase()}) successfully`, 'success');
+        showToast(`${t.updateSuccess}: ${model} (${plate.toUpperCase()})`, 'success');
       }
     } else {
-      // Create new vehicle
       const newVehicle = {
         id: 'car_' + Date.now(),
-        plate: plate.toUpperCase(),
-        model,
-        expiryDate,
+        vehicleNo,
         type,
+        model,
+        plate: plate.toUpperCase(),
+        driverName,
+        registrationNo,
+        issueDate,
+        expiryDate,
         color,
         colorName,
-        insuranceExpiry,
+        remarks,
         notes,
         createdAt: Date.now()
       };
       vehicles.push(newVehicle);
-      showToast(`Added ${model} (${plate.toUpperCase()}) to vault`, 'success');
+      showToast(`${t.addSuccess}: ${model} (${plate.toUpperCase()})`, 'success');
     }
+
     saveVehicles();
     closeModal();
     renderApp();
   }
+
   function showFieldError(fieldKey, message) {
     const inputEl = document.getElementById(`${fieldKey}-input`);
     const errorEl = document.getElementById(`${fieldKey}-error`);
@@ -517,36 +987,118 @@
       errorEl.classList.add('visible');
     }
   }
+
   function quickRenewVehicle(id) {
     const v = vehicles.find(item => item.id === id);
     if (!v) return;
-    // Calculate current expiry + 1 year
-    const currentDateObj = new Date(v.expiryDate + 'T00:00:00');
-    // If already expired, start 1 year from today!
+
+    const currentDateObj = new Date((v.expiryDate || getOffsetDateString(0)) + 'T00:00:00');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
     let baseDate = currentDateObj < today ? today : currentDateObj;
     baseDate.setFullYear(baseDate.getFullYear() + 1);
+
     const newExpiryStr = baseDate.toISOString().split('T')[0];
     v.expiryDate = newExpiryStr;
     v.updatedAt = Date.now();
+
     saveVehicles();
     renderApp();
-    showToast(`Renewed registration for ${v.model} (+1 Year to ${formatDateDisplay(newExpiryStr)})!`, 'success');
+
+    const t = i18n[currentLang];
+    showToast(`${v.model} (${v.plate}): ${t.renewSuccess}`, 'success');
   }
+
   function deleteVehicle(id) {
     const v = vehicles.find(item => item.id === id);
     if (!v) return;
-    if (confirm(`Are you sure you want to delete ${v.model} (${v.plate}) from your tracker?`)) {
+
+    const t = i18n[currentLang];
+    if (confirm(`${t.deleteConfirm} "${v.model} (${v.plate})"?`)) {
       vehicles = vehicles.filter(item => item.id !== id);
       saveVehicles();
       renderApp();
-      showToast(`Deleted vehicle ${v.plate}`, 'info');
+      showToast(t.deleteSuccess, 'info');
     }
   }
+
   /* ==========================================
-     Import / Export
+     Excel (.xlsx) Export & JSON Import/Export
      ========================================== */
+  function exportToExcel() {
+    if (vehicles.length === 0) {
+      showToast(currentLang === 'ar' ? 'لا توجد بيانات مركبات لتصديرها!' : 'No vehicle records to export!', 'warning');
+      return;
+    }
+
+    try {
+      const dataToExport = getFilteredAndSortedVehicles().map((v, index) => {
+        const info = getExpiryStatusInfo(v.expiryDate);
+        const isAr = currentLang === 'ar';
+
+        let statusText = 'Valid';
+        if (info.status === 'expiring') statusText = isAr ? 'ينتهي قريباً' : 'Expiring Soon';
+        else if (info.status === 'expired') statusText = isAr ? 'منتهي الصلاحية' : 'Expired';
+        else statusText = isAr ? 'صالح' : 'Valid';
+
+        return {
+          [isAr ? 'الرقم' : 'No.']: index + 1,
+          [isAr ? 'رقم المركبة' : 'Vehicle No']: v.vehicleNo || '',
+          [isAr ? 'نوع المركبة' : 'Vehicle Type']: v.type || '',
+          [isAr ? 'الموديل' : 'Model']: v.model || '',
+          [isAr ? 'رقم اللوحة' : 'Plate No']: v.plate || '',
+          [isAr ? 'اسم السائق' : 'Driver Name']: v.driverName || '',
+          [isAr ? 'رقم التسجيل' : 'Registration No']: v.registrationNo || '',
+          [isAr ? 'تاريخ الإصدار' : 'Issue Date']: formatDateForExcel(v.issueDate),
+          [isAr ? 'تاريخ الانتهاء' : 'Expiry Date']: formatDateForExcel(v.expiryDate),
+          [isAr ? 'الأيام المتبقية' : 'Days Remaining']: info.diffDays,
+          [isAr ? 'الحالة' : 'Status']: statusText,
+          [isAr ? 'ملاحظات' : 'Remarks']: v.remarks || '—'
+        };
+      });
+
+      if (window.XLSX) {
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Vehicle Registrations');
+
+        const fileName = `Vehicle_Registration_Tracker_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+        showToast(currentLang === 'ar' ? 'تم تصدير ملف Excel بنجاح!' : 'Exported Excel (.xlsx) file successfully!', 'success');
+      } else {
+        // Fallback CSV Download
+        exportCSV(dataToExport);
+      }
+    } catch (err) {
+      console.error('Error exporting to Excel:', err);
+      showToast('Failed to export Excel file', 'error');
+    }
+  }
+
+  function exportCSV(dataArray) {
+    if (dataArray.length === 0) return;
+    const headers = Object.keys(dataArray[0]);
+    const csvRows = [headers.join(',')];
+
+    dataArray.forEach(row => {
+      const values = headers.map(h => `"${String(row[h]).replace(/"/g, '""')}"`);
+      csvRows.push(values.join(','));
+    });
+
+    const csvString = '\uFEFF' + csvRows.join('\n'); // Add UTF-8 BOM for Arabic text
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Vehicle_Registrations_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Exported CSV file successfully!', 'success');
+  }
+
   function exportVehiclesJSON() {
     if (vehicles.length === 0) {
       showToast('No vehicle records to export!', 'warning');
@@ -562,42 +1114,47 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('Exported vehicles data successfully!', 'success');
+    showToast('Exported JSON backup file successfully!', 'success');
   }
+
   function importVehiclesJSON(e) {
     const file = e.target.files[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = function (event) {
       try {
         const importedData = JSON.parse(event.target.result);
         if (!Array.isArray(importedData)) {
-          throw new Error('Invalid file format. Expected array of vehicles.');
+          throw new Error('Invalid file format.');
         }
-        // Simple validation
-        const validVehicles = importedData.filter(item => item.plate && item.model && item.expiryDate);
+
+        const validVehicles = importedData.filter(item => item.model && item.expiryDate);
         if (validVehicles.length === 0) {
           showToast('No valid vehicle records found in imported file.', 'error');
           return;
         }
+
         vehicles = validVehicles;
         saveVehicles();
         renderApp();
         showToast(`Successfully imported ${validVehicles.length} vehicles!`, 'success');
       } catch (err) {
         console.error(err);
-        showToast('Failed to import JSON file. Please check file structure.', 'error');
+        showToast('Failed to import JSON file.', 'error');
       }
     };
     reader.readAsText(file);
-    e.target.value = ''; // Reset input
+    e.target.value = '';
   }
+
   /* ==========================================
-     Toast Notifications
+     Toast Notifications & Escape Helpers
      ========================================== */
   function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
+
     let iconSvg = '';
     if (type === 'success') {
       iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
@@ -606,8 +1163,10 @@
     } else {
       iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
     }
+
     toast.innerHTML = `${iconSvg} <span>${escapeHtml(message)}</span>`;
     dom.toastContainer.appendChild(toast);
+
     setTimeout(() => {
       toast.style.opacity = '0';
       toast.style.transform = 'translateY(100%) scale(0.9)';
@@ -615,6 +1174,7 @@
       setTimeout(() => toast.remove(), 300);
     }, 3500);
   }
+
   function escapeHtml(str) {
     if (!str) return '';
     return String(str)
@@ -624,31 +1184,45 @@
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
   }
+
+  function getOffsetDateString(daysOffset) {
+    const d = new Date();
+    d.setDate(d.getDate() + daysOffset);
+    return d.toISOString().split('T')[0];
+  }
+
   /* ==========================================
      Event Listeners Binds
      ========================================== */
   function setupEventListeners() {
-    // Theme
+    // Theme & Language Toggles
     dom.themeToggleBtn.addEventListener('click', toggleTheme);
-    // Export / Import
+    dom.langToggleBtn.addEventListener('click', toggleLanguage);
+
+    // Export Excel / JSON & Import JSON
+    dom.exportExcelBtn.addEventListener('click', exportToExcel);
     dom.exportBtn.addEventListener('click', exportVehiclesJSON);
     dom.importBtn.addEventListener('click', () => dom.importFileInput.click());
     dom.importFileInput.addEventListener('change', importVehiclesJSON);
-    // Add Car Modal
+
+    // Modal Triggers & Form
     dom.addCarBtn.addEventListener('click', openModalForAdd);
     dom.emptyActionBtn.addEventListener('click', openModalForAdd);
     dom.closeModalBtn.addEventListener('click', closeModal);
     dom.cancelModalBtn.addEventListener('click', closeModal);
     dom.carForm.addEventListener('submit', handleFormSubmit);
+
     // Live Plate Preview Typing Sync
     dom.plateInput.addEventListener('input', (e) => {
       const val = e.target.value.trim();
-      dom.previewPlateText.textContent = val ? val.toUpperCase() : 'ABC-1234';
+      dom.previewPlateText.textContent = val ? val.toUpperCase() : '12345';
     });
+
     // Color Swatch Sync
     dom.colorPicker.addEventListener('input', (e) => {
       dom.colorInput.value = e.target.value;
     });
+
     // Search Input
     dom.searchInput.addEventListener('input', (e) => {
       searchQuery = e.target.value;
@@ -657,14 +1231,16 @@
       } else {
         dom.clearSearchBtn.classList.add('hidden');
       }
-      renderVehicleList();
+      renderMainViews();
     });
+
     dom.clearSearchBtn.addEventListener('click', () => {
       dom.searchInput.value = '';
       searchQuery = '';
       dom.clearSearchBtn.classList.add('hidden');
-      renderVehicleList();
+      renderMainViews();
     });
+
     // Filter Tabs
     dom.filterTabs.forEach(tab => {
       tab.addEventListener('click', () => {
@@ -675,41 +1251,56 @@
         tab.classList.add('active');
         tab.setAttribute('aria-selected', 'true');
         currentFilter = tab.dataset.filter;
-        renderVehicleList();
+        renderMainViews();
       });
     });
+
     // Sort Select
     dom.sortSelect.addEventListener('change', (e) => {
       currentSort = e.target.value;
-      renderVehicleList();
+      renderMainViews();
     });
+
     // View Toggles
+    dom.viewExcelBtn.addEventListener('click', () => {
+      currentView = 'excel';
+      dom.viewExcelBtn.classList.add('active');
+      dom.viewGridBtn.classList.remove('active');
+      dom.viewListBtn.classList.remove('active');
+      renderMainViews();
+    });
+
     dom.viewGridBtn.addEventListener('click', () => {
       currentView = 'grid';
       dom.viewGridBtn.classList.add('active');
+      dom.viewExcelBtn.classList.remove('active');
       dom.viewListBtn.classList.remove('active');
-      renderVehicleList();
+      renderMainViews();
     });
+
     dom.viewListBtn.addEventListener('click', () => {
       currentView = 'list';
       dom.viewListBtn.classList.add('active');
+      dom.viewExcelBtn.classList.remove('active');
       dom.viewGridBtn.classList.remove('active');
-      renderVehicleList();
+      renderMainViews();
     });
-    // Escape Key Modal Close
+
+    // Keyboard & Backdrop Modal Closing
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !dom.carModal.classList.contains('hidden')) {
         closeModal();
       }
     });
-    // Backdrop Click Close
+
     dom.carModal.addEventListener('click', (e) => {
       if (e.target === dom.carModal) {
         closeModal();
       }
     });
   }
-  // Run app on DOMReady
+
+  // DOMReady initialization
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
