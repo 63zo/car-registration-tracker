@@ -10,39 +10,41 @@
   const THEME_KEY = 'autovault_theme_pref';
   const LANG_KEY = 'autovault_lang_pref';
 
-  // Sample Pre-populated Vehicles Data (Matching user screenshot exact values)
-  const INITIAL_DEMO_CARS = [
-    {
-      id: 'car_demo_1',
-      vehicleNo: '001',
-      type: 'Toyota',
-      model: 'Camry',
-      plate: '12345',
-      driverName: 'Ahmed',
-      registrationNo: '45879',
-      issueDate: '2026-01-01',
-      expiryDate: '2026-12-31',
-      remarks: '—',
-      color: '#3B82F6',
-      notes: 'Primary fleet vehicle',
-      createdAt: Date.now() - 2000000
-    },
-    {
-      id: 'car_demo_2',
-      vehicleNo: '002',
-      type: 'Nissan',
-      model: 'Patrol',
-      plate: '67890',
-      driverName: 'Mohammed',
-      registrationNo: '45880',
-      issueDate: '2026-02-15',
-      expiryDate: '2026-08-14',
-      remarks: 'Renewal',
-      color: '#10B981',
-      notes: 'Executive SUV',
-      createdAt: Date.now() - 1000000
-    }
-  ];
+  // Initial Vehicles Data (Empty - users add their own vehicles)
+  const INITIAL_DEMO_CARS = [];
+
+  // Popular Car Brands & Model Dictionary
+  const CAR_BRANDS_DATA = {
+    'Toyota': ['Camry', 'Corolla', 'RAV4', 'Land Cruiser', 'Hilux', 'Prado', 'Yaris', 'Avalon', 'Highlander', 'Fortuner', 'Supra', 'Crown', 'Sienna', 'Tacoma', 'Tundra', 'C-HR', 'Corolla Cross', '4Runner'],
+    'Nissan': ['Patrol', 'Altima', 'Sunny', 'Maxima', 'Pathfinder', 'X-Trail', 'Sentra', 'Rogue', 'Armada', 'GT-R', 'Kicks', 'Murano', 'Frontier', 'Z', 'Urvan'],
+    'Honda': ['Civic', 'Accord', 'CR-V', 'Pilot', 'HR-V', 'City', 'Odyssey', 'Insight', 'Passport', 'Ridgeline'],
+    'Hyundai': ['Elantra', 'Sonata', 'Tucson', 'Santa Fe', 'Accent', 'Palisade', 'Kona', 'Venue', 'Azera', 'Creta', 'Ioniq 5', 'Staria'],
+    'Kia': ['K5', 'Sportage', 'Sorento', 'Cerato', 'Rio', 'Telluride', 'Stinger', 'Carnival', 'Seltos', 'Picanto', 'Pegas', 'EV6', 'Optima'],
+    'Ford': ['Mustang', 'Explorer', 'F-150', 'Expedition', 'Ranger', 'Edge', 'Escape', 'Bronco', 'Taurus', 'Everest', 'Territory'],
+    'Chevrolet': ['Tahoe', 'Suburban', 'Silverado', 'Camaro', 'Traverse', 'Malibu', 'Equinox', 'Trailblazer', 'Captiva', 'Corvette', 'Groove'],
+    'Lexus': ['ES', 'LS', 'RX', 'LX', 'GX', 'IS', 'NX', 'UX', 'LC', 'LM'],
+    'Mercedes-Benz': ['C-Class', 'E-Class', 'S-Class', 'GLE', 'GLS', 'G-Class', 'CLA', 'GLA', 'GLC', 'AMG GT', 'EQE', 'EQS'],
+    'BMW': ['3 Series', '5 Series', '7 Series', 'X3', 'X5', 'X6', 'X7', '4 Series', 'M3', 'M5', 'i4', 'iX'],
+    'Audi': ['A4', 'A6', 'A8', 'Q5', 'Q7', 'Q8', 'Q3', 'e-tron', 'RS6', 'RS7'],
+    'GMC': ['Yukon', 'Sierra', 'Acadia', 'Terrain', 'Hummer EV'],
+    'Dodge': ['Charger', 'Challenger', 'Durango', 'RAM 1500'],
+    'Jeep': ['Grand Cherokee', 'Wrangler', 'Cherokee', 'Compass', 'Gladiator', 'Renegade'],
+    'Volkswagen': ['Golf', 'Passat', 'Tiguan', 'Touareg', 'Jetta', 'Teramont', 'ID.4', 'T-Roc'],
+    'Mazda': ['Mazda3', 'Mazda6', 'CX-5', 'CX-9', 'CX-30', 'CX-50', 'MX-5 Miata', 'CX-60'],
+    'Mitsubishi': ['Pajero', 'Lancer', 'Outlander', 'ASX', 'Eclipse Cross', 'Montero Sport', 'Attrage', 'Xpander'],
+    'Land Rover': ['Range Rover', 'Range Rover Sport', 'Defender', 'Discovery', 'Evoque', 'Velar'],
+    'Porsche': ['911', 'Cayenne', 'Macan', 'Panamera', 'Taycan', 'Boxster', 'Cayman'],
+    'Tesla': ['Model 3', 'Model Y', 'Model S', 'Model X', 'Cybertruck'],
+    'Subaru': ['Outback', 'Forester', 'Impreza', 'WRX', 'Crosstrek', 'BRZ'],
+    'Genesis': ['G70', 'G80', 'G90', 'GV70', 'GV80'],
+    'Suzuki': ['Swift', 'Jimny', 'Vitara', 'Baleno', 'Ertiga', 'Grand Vitara', 'Dzire'],
+    'MG': ['MG GT', 'MG ZS', 'MG RX5', 'MG 6', 'MG HS', 'MG 5', 'MG ONE', 'MG Whale'],
+    'Geely': ['Coolray', 'Monjaro', 'Tugella', 'Emgrand', 'Azkarra', 'Geometry C', 'Starray'],
+    'Changan': ['CS75 Plus', 'CS35 Plus', 'CS95', 'Eado', 'UNI-K', 'UNI-V', 'UNI-T', 'Alsvin'],
+    'BYD': ['Song Plus', 'Atto 3', 'Han', 'Tang', 'Seal', 'Dolphin', 'Yuan Plus', 'Qin Plus']
+  };
+
+  const FEATURED_BRANDS = ['Toyota', 'Nissan', 'Honda', 'Hyundai', 'Kia', 'Ford', 'Chevrolet', 'Mercedes-Benz', 'BMW', 'Lexus', 'GMC', 'Dodge', 'Jeep', 'Mazda'];
 
   // Internationalization (i18n) Dictionary
   const i18n = {
@@ -100,6 +102,8 @@
       lblRemarks: 'Remarks',
       lblNotes: 'Additional Notes / VIN (Optional)',
       lblLivePreview: 'Live Plate Preview',
+      lblPopularBrands: 'Popular Brands:',
+      modelPlaceholderSelectBrand: 'Select brand first...',
       btnCancel: 'Cancel',
       btnSave: 'Save Vehicle',
       emptyTitle: 'No vehicles found',
@@ -166,6 +170,8 @@
       lblRemarks: 'ملاحظات',
       lblNotes: 'ملاحظات إضافية / رقم الهيكل (اختياري)',
       lblLivePreview: 'معاينة اللوحة المباشرة',
+      lblPopularBrands: 'الماركات الشهيرة:',
+      modelPlaceholderSelectBrand: 'اختر الماركة أولاً...',
       btnCancel: 'إلغاء',
       btnSave: 'حفظ المركبة',
       emptyTitle: 'لم يتم العثور على مركبات',
@@ -280,6 +286,12 @@
     remarksInput: document.getElementById('remarks-input'),
     notesInput: document.getElementById('notes-input'),
 
+    // Brand & Model Dynamic Lists
+    brandList: document.getElementById('brand-list'),
+    modelList: document.getElementById('model-list'),
+    brandChips: document.getElementById('brand-chips'),
+    txtPopularBrands: document.getElementById('txt-popular-brands'),
+
     // Form Labels
     lblVehicleNo: document.getElementById('lbl-vehicleno'),
     lblVehicleType: document.getElementById('lbl-vehicletype'),
@@ -301,12 +313,84 @@
   };
 
   /* ==========================================
+     Brand & Model Selector Helpers
+     ========================================== */
+  function populateBrandDatalist() {
+    if (!dom.brandList) return;
+    dom.brandList.innerHTML = '';
+    Object.keys(CAR_BRANDS_DATA).sort().forEach(brand => {
+      const option = document.createElement('option');
+      option.value = brand;
+      dom.brandList.appendChild(option);
+    });
+  }
+
+  function renderBrandChips(selectedBrand = '') {
+    if (!dom.brandChips) return;
+    dom.brandChips.innerHTML = '';
+    const normSelected = (selectedBrand || '').trim().toLowerCase();
+
+    FEATURED_BRANDS.forEach(brand => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = `brand-chip ${normSelected === brand.toLowerCase() ? 'active' : ''}`;
+      chip.textContent = brand;
+      chip.addEventListener('click', () => {
+        dom.typeInput.value = brand;
+        updateBrandAndModelOptions(brand);
+        dom.modelInput.focus();
+      });
+      dom.brandChips.appendChild(chip);
+    });
+  }
+
+  function findMatchingBrandKey(inputBrand) {
+    if (!inputBrand) return null;
+    const cleanInput = inputBrand.trim().toLowerCase();
+    return Object.keys(CAR_BRANDS_DATA).find(
+      key => key.toLowerCase() === cleanInput
+    ) || null;
+  }
+
+  function updateBrandAndModelOptions(brandName) {
+    renderBrandChips(brandName);
+    const matchedBrand = findMatchingBrandKey(brandName);
+    const t = i18n[currentLang];
+
+    if (!dom.modelList) return;
+    dom.modelList.innerHTML = '';
+
+    if (matchedBrand) {
+      const models = CAR_BRANDS_DATA[matchedBrand];
+      models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model;
+        dom.modelList.appendChild(option);
+      });
+
+      const sampleModels = models.slice(0, 3).join(', ');
+      const isAr = currentLang === 'ar';
+      dom.modelInput.placeholder = isAr
+        ? `اختر موديل ${matchedBrand} (مثل ${sampleModels}...)`
+        : `Select ${matchedBrand} model (e.g. ${sampleModels}...)`;
+    } else if (brandName && brandName.trim() !== '') {
+      const isAr = currentLang === 'ar';
+      dom.modelInput.placeholder = isAr
+        ? `اكتب موديل سيارة ${brandName.trim()}...`
+        : `Type ${brandName.trim()} model...`;
+    } else {
+      dom.modelInput.placeholder = t.modelPlaceholderSelectBrand || 'Select brand first...';
+    }
+  }
+
+  /* ==========================================
      Initialization & Storage
      ========================================== */
   function init() {
     loadLanguage();
     loadTheme();
     loadVehicles();
+    populateBrandDatalist();
     setupEventListeners();
     applyLanguage();
     renderApp();
@@ -381,12 +465,18 @@
     if (dom.lblIssueDate.childNodes[0]) dom.lblIssueDate.childNodes[0].nodeValue = t.lblIssueDate + ' ';
     if (dom.lblExpiryDate.childNodes[0]) dom.lblExpiryDate.childNodes[0].nodeValue = t.lblExpiryDate + ' ';
     
+    if (dom.txtPopularBrands) dom.txtPopularBrands.textContent = t.lblPopularBrands;
     dom.lblColor.textContent = t.lblColor;
     dom.lblRemarks.textContent = t.lblRemarks;
     dom.lblNotes.textContent = t.lblNotes;
     dom.txtLivePreviewLabel.textContent = t.lblLivePreview;
     dom.txtCancelBtn.textContent = t.btnCancel;
     dom.txtSaveBtn.textContent = t.btnSave;
+
+    // Refresh model options placeholder for current language
+    if (dom.typeInput) {
+      updateBrandAndModelOptions(dom.typeInput.value);
+    }
 
     // Footer
     dom.txtFooter.textContent = t.footerText;
@@ -417,13 +507,19 @@
             createdAt: v.createdAt || Date.now()
           }));
         } else {
-          vehicles = [...INITIAL_DEMO_CARS];
+          vehicles = [];
         }
+      }
+
+      // Filter out any demo vehicles so user starts with a clean slate
+      const initialLen = vehicles.length;
+      vehicles = vehicles.filter(v => !v.id || !v.id.startsWith('car_demo_'));
+      if (vehicles.length !== initialLen || !rawData) {
         saveVehicles();
       }
     } catch (e) {
       console.error('Error loading vehicles:', e);
-      vehicles = [...INITIAL_DEMO_CARS];
+      vehicles = [];
     }
   }
 
@@ -850,6 +946,10 @@
 
     const nextNo = String(vehicles.length + 1).padStart(3, '0');
     dom.vehicleNoInput.value = nextNo;
+    dom.typeInput.value = '';
+    dom.modelInput.value = '';
+    updateBrandAndModelOptions('');
+
     dom.colorPicker.value = '#3B82F6';
     dom.colorInput.value = 'Blue';
     dom.remarksInput.value = '—';
@@ -879,6 +979,7 @@
     dom.carIdInput.value = v.id;
     dom.vehicleNoInput.value = v.vehicleNo || '';
     dom.typeInput.value = v.type || '';
+    updateBrandAndModelOptions(v.type || '');
     dom.modelInput.value = v.model || '';
     dom.plateInput.value = v.plate || '';
     dom.driverInput.value = v.driverName || '';
@@ -1331,6 +1432,14 @@
     dom.plateInput.addEventListener('input', (e) => {
       const val = e.target.value.trim();
       dom.previewPlateText.textContent = val ? val.toUpperCase() : '12345';
+    });
+
+    // Brand Input Dynamic Model Options Sync
+    dom.typeInput.addEventListener('input', (e) => {
+      updateBrandAndModelOptions(e.target.value);
+    });
+    dom.typeInput.addEventListener('change', (e) => {
+      updateBrandAndModelOptions(e.target.value);
     });
 
     // Color Swatch Sync
