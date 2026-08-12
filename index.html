@@ -234,14 +234,20 @@
           <!-- Vehicle Type / Make -->
           <div class="form-group">
             <label for="type-input" class="input-label" id="lbl-vehicletype">Vehicle Type / Make <span class="required">*</span></label>
-            <input type="text" id="type-input" class="form-input" placeholder="e.g. Toyota, Nissan, Honda" required>
+            <input type="text" id="type-input" class="form-input" placeholder="e.g. Toyota, Nissan, Honda" list="brand-list" required autocomplete="off">
+            <datalist id="brand-list"></datalist>
             <span class="error-msg" id="type-error">Please enter vehicle type or make</span>
+            <div class="brand-chips-container" id="brand-chips-container">
+              <span class="brand-chips-title" id="txt-popular-brands">Popular Brands:</span>
+              <div class="brand-chips" id="brand-chips"></div>
+            </div>
           </div>
 
           <!-- Model -->
           <div class="form-group">
             <label for="model-input" class="input-label" id="lbl-model">Model <span class="required">*</span></label>
-            <input type="text" id="model-input" class="form-input" placeholder="e.g. Camry, Patrol, Land Cruiser" required>
+            <input type="text" id="model-input" class="form-input" placeholder="e.g. Select brand first..." list="model-list" required autocomplete="off">
+            <datalist id="model-list"></datalist>
             <span class="error-msg" id="model-error">Please enter vehicle model</span>
           </div>
 
