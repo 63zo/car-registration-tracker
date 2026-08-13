@@ -290,29 +290,38 @@ body {
   letter-spacing: 0.02em;
 }
 
-.excel-header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+.excel-sheet-table th.sortable-header {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.excel-sheet-table th.sortable-header:hover {
+  background: #2b6599;
 }
 
 .excel-filter-arrow {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-  font-size: 0.65rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
   color: #ffffff;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
+  user-select: none;
 }
 
 .excel-filter-arrow:hover {
   background: rgba(255, 255, 255, 0.4);
+}
+
+.excel-filter-arrow.active {
+  background: #3b82f6;
+  font-weight: bold;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
 }
 
 /* Excel Data Cells */
