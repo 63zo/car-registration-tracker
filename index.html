@@ -175,6 +175,25 @@
 
     <!-- Main Content Container -->
     <main>
+      <!-- Temporary Duplicates Section -->
+      <div id="temporary-duplicates-section" class="temporary-duplicates-wrapper hidden">
+        <div class="temporary-header">
+          <div class="temporary-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span id="txt-temp-duplicates-title">⚠️ Temporary Section: Duplicate License Plates</span>
+            <span id="temp-duplicates-count-badge" class="badge-count">0</span>
+          </div>
+          <button id="remove-all-duplicates-btn" class="btn btn-danger btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span id="txt-remove-all-duplicates-btn">Remove All Duplicates</span>
+          </button>
+        </div>
+        <p class="temporary-description" id="txt-temp-duplicates-desc">
+          These imported vehicles match existing license plates in your database. Highlighted column values indicate the duplicate fields.
+        </p>
+        <div id="temporary-duplicates-view" class="temporary-duplicates-table-container"></div>
+      </div>
+
       <!-- Vehicles Container for Grid/List Views -->
       <div id="vehicles-container" class="vehicles-grid hidden">
         <!-- Cards injected dynamically by app.js -->
