@@ -114,7 +114,9 @@
       deleteConfirm: 'Are you sure you want to delete vehicle',
       deleteSuccess: 'Vehicle deleted successfully',
       addSuccess: 'Vehicle added successfully',
-      updateSuccess: 'Vehicle updated successfully'
+      updateSuccess: 'Vehicle updated successfully',
+      errDuplicateVehicleNo: 'Vehicle No. must be unique (a vehicle with this number already exists)',
+      errVehicleNoRequired: 'Please enter vehicle number'
     },
     ar: {
       brandTitle: 'أوتو فولت',
@@ -182,7 +184,9 @@
       deleteConfirm: 'هل أنت تأكد من حذف المركبة',
       deleteSuccess: 'تم حذف المركبة بنجاح',
       addSuccess: 'تمت إضافة المركبة بنجاح',
-      updateSuccess: 'تم تحديث بيانات المركبة بنجاح'
+      updateSuccess: 'تم تحديث بيانات المركبة بنجاح',
+      errDuplicateVehicleNo: 'رقم المركبة يجب أن يكون فريداً (توجد مركبة أخرى بنفس هذا الرقم)',
+      errVehicleNoRequired: 'يرجى إدخال رقم المركبة'
     }
   };
 
@@ -190,7 +194,8 @@
   let vehicles = [];
   let currentFilter = 'all';
   let searchQuery = '';
-  let currentSort = 'expiry-asc';
+  let sortColumn = 'expiryDate'; // 'no', 'vehicleNo', 'type', 'model', 'plate', 'driverName', 'registrationNo', 'issueDate', 'expiryDate', 'daysRemaining', 'status', 'remarks', 'createdAt'
+  let sortOrder = 'asc'; // 'asc' or 'desc'
   let currentView = 'excel'; // 'excel', 'grid', 'list'
   let currentLang = 'en'; // 'en', 'ar'
 
@@ -613,21 +618,20 @@
     if (!dateStr) return '';
     const parts = dateStr.split('-');
     if (parts.length !== 3) return dateStr;
-    const dateObj = new Date(dateStr + 'T00:00:00');
-    if (isNaN(dateObj.getTime())) return dateStr;
-
-    return dateObj.toLocaleDateString(currentLang === 'ar' ? 'ar-SA' : 'en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    const year = parts[0];
+    const month = parts[1].padStart(2, '0');
+    const day = parts[2].padStart(2, '0');
+    return `${day}/${month}/${year}`;
   }
 
   function formatDateForExcel(dateStr) {
     if (!dateStr) return '';
     const parts = dateStr.split('-');
     if (parts.length !== 3) return dateStr;
-    return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}/${parts[0]}`;
+    const year = parts[0];
+    const month = parts[1].padStart(2, '0');
+    const day = parts[2].padStart(2, '0');
+    return `${day}/${month}/${year}`;
   }
 
   /* ==========================================
@@ -723,19 +727,60 @@
         return true;
       })
       .sort((a, b) => {
-        if (currentSort === 'expiry-asc') {
-          return new Date(a.expiryDate) - new Date(b.expiryDate);
-        } else if (currentSort === 'expiry-desc') {
-          return new Date(b.expiryDate) - new Date(a.expiryDate);
-        } else if (currentSort === 'model-asc') {
-          return (a.model || '').localeCompare(b.model || '');
-        } else if (currentSort === 'plate-asc') {
-          return (a.plate || '').localeCompare(b.plate || '');
-        } else if (currentSort === 'vehicleNo-asc') {
-          return (a.vehicleNo || '').localeCompare(b.vehicleNo || '', undefined, { numeric: true });
-        } else if (currentSort === 'added-desc') {
-          return (b.createdAt || 0) - (a.createdAt || 0);
+        let valA, valB;
+        if (sortColumn === 'no') {
+          valA = vehicles.indexOf(a);
+          valB = vehicles.indexOf(b);
+        } else if (sortColumn === 'vehicleNo') {
+          return sortOrder === 'asc'
+            ? (a.vehicleNo || '').localeCompare(b.vehicleNo || '', undefined, { numeric: true, sensitivity: 'base' })
+            : (b.vehicleNo || '').localeCompare(a.vehicleNo || '', undefined, { numeric: true, sensitivity: 'base' });
+        } else if (sortColumn === 'type') {
+          valA = (a.type || '').toLowerCase();
+          valB = (b.type || '').toLowerCase();
+        } else if (sortColumn === 'model') {
+          valA = (a.model || '').toLowerCase();
+          valB = (b.model || '').toLowerCase();
+        } else if (sortColumn === 'plate') {
+          valA = (a.plate || '').toLowerCase();
+          valB = (b.plate || '').toLowerCase();
+        } else if (sortColumn === 'driverName') {
+          valA = (a.driverName || '').toLowerCase();
+          valB = (b.driverName || '').toLowerCase();
+        } else if (sortColumn === 'registrationNo') {
+          valA = (a.registrationNo || '').toLowerCase();
+          valB = (b.registrationNo || '').toLowerCase();
+        } else if (sortColumn === 'issueDate') {
+          valA = new Date(a.issueDate || '1970-01-01').getTime();
+          valB = new Date(b.issueDate || '1970-01-01').getTime();
+        } else if (sortColumn === 'expiryDate') {
+          valA = new Date(a.expiryDate || '1970-01-01').getTime();
+          valB = new Date(b.expiryDate || '1970-01-01').getTime();
+        } else if (sortColumn === 'daysRemaining') {
+          valA = getExpiryStatusInfo(a.expiryDate).diffDays;
+          valB = getExpiryStatusInfo(b.expiryDate).diffDays;
+        } else if (sortColumn === 'status') {
+          const statusOrder = { expired: 0, expiring: 1, active: 2 };
+          valA = statusOrder[getExpiryStatusInfo(a.expiryDate).status] ?? 3;
+          valB = statusOrder[getExpiryStatusInfo(b.expiryDate).status] ?? 3;
+        } else if (sortColumn === 'remarks') {
+          valA = (a.remarks || '').toLowerCase();
+          valB = (b.remarks || '').toLowerCase();
+        } else if (sortColumn === 'createdAt') {
+          valA = a.createdAt || 0;
+          valB = b.createdAt || 0;
+        } else {
+          valA = (a[sortColumn] || '').toString().toLowerCase();
+          valB = (b[sortColumn] || '').toString().toLowerCase();
         }
+
+        if (typeof valA === 'string' && typeof valB === 'string') {
+          const comp = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+          return sortOrder === 'asc' ? comp : -comp;
+        }
+
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
         return 0;
       });
   }
@@ -790,22 +835,42 @@
   function renderExcelTable(list) {
     const t = i18n[currentLang];
 
+    const headers = [
+      { key: 'no', label: t.colNo },
+      { key: 'vehicleNo', label: t.colVehicleNo },
+      { key: 'type', label: t.colVehicleType },
+      { key: 'model', label: t.colModel },
+      { key: 'plate', label: t.colPlateNo },
+      { key: 'driverName', label: t.colDriverName },
+      { key: 'registrationNo', label: t.colRegistrationNo },
+      { key: 'issueDate', label: t.colIssueDate },
+      { key: 'expiryDate', label: t.colExpiryDate },
+      { key: 'daysRemaining', label: t.colDaysRemaining },
+      { key: 'status', label: t.colStatus },
+      { key: 'remarks', label: t.colRemarks }
+    ];
+
     let html = `
       <table class="excel-sheet-table">
         <thead>
           <tr>
-            <th><div class="excel-header-content"><span>${t.colNo}</span> <span class="excel-filter-arrow">▼</span></div></th>
-            <th><div class="excel-header-content"><span>${t.colVehicleNo}</span> <span class="excel-filter-arrow">▼</span></div></th>
-            <th><div class="excel-header-content"><span>${t.colVehicleType}</span> <span class="excel-filter-arrow">▼</span></div></th>
-            <th><div class="excel-header-content"><span>${t.colModel}</span> <span class="excel-filter-arrow">▼</span></div></th>
-            <th><div class="excel-header-content"><span>${t.colPlateNo}</span> <span class="excel-filter-arrow">▼</span></div></th>
-            <th><div class="excel-header-content"><span>${t.colDriverName}</span> <span class="excel-filter-arrow">▼</span></div></th>
-            <th><div class="excel-header-content"><span>${t.colRegistrationNo}</span> <span class="excel-filter-arrow">▼</span></div></th>
-            <th><div class="excel-header-content"><span>${t.colIssueDate}</span> <span class="excel-filter-arrow">▼</span></div></th>
-            <th><div class="excel-header-content"><span>${t.colExpiryDate}</span> <span class="excel-filter-arrow">▼</span></div></th>
-            <th><div class="excel-header-content"><span>${t.colDaysRemaining}</span> <span class="excel-filter-arrow">▼</span></div></th>
-            <th><div class="excel-header-content"><span>${t.colStatus}</span> <span class="excel-filter-arrow">▼</span></div></th>
-            <th><div class="excel-header-content"><span>${t.colRemarks}</span> <span class="excel-filter-arrow">▼</span></div></th>
+    `;
+
+    headers.forEach(h => {
+      const isSorted = sortColumn === h.key;
+      const arrowSymbol = isSorted ? (sortOrder === 'asc' ? '▲' : '▼') : '↕';
+      const activeClass = isSorted ? 'active' : '';
+      html += `
+        <th data-sort-key="${h.key}" class="sortable-header" title="Sort by ${h.label}">
+          <div class="excel-header-content">
+            <span>${h.label}</span>
+            <span class="excel-filter-arrow ${activeClass}">${arrowSymbol}</span>
+          </div>
+        </th>
+      `;
+    });
+
+    html += `
             <th><div class="excel-header-content"><span>${t.colActions}</span></div></th>
           </tr>
         </thead>
@@ -855,6 +920,21 @@
     html += `</tbody></table>`;
     dom.excelViewContainer.innerHTML = html;
 
+    dom.excelViewContainer.querySelectorAll('.sortable-header').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sortKey;
+        if (!key) return;
+        if (sortColumn === key) {
+          sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortColumn = key;
+          sortOrder = 'asc';
+        }
+        syncSortSelectUI();
+        renderMainViews();
+      });
+    });
+
     dom.excelViewContainer.querySelectorAll('.renew-btn').forEach(btn => {
       btn.addEventListener('click', () => quickRenewVehicle(btn.dataset.id));
     });
@@ -864,6 +944,21 @@
     dom.excelViewContainer.querySelectorAll('.delete-btn').forEach(btn => {
       btn.addEventListener('click', () => deleteVehicle(btn.dataset.id));
     });
+  }
+
+  function syncSortSelectUI() {
+    if (!dom.sortSelect) return;
+    let matchVal = '';
+    if (sortColumn === 'expiryDate' && sortOrder === 'asc') matchVal = 'expiry-asc';
+    else if (sortColumn === 'expiryDate' && sortOrder === 'desc') matchVal = 'expiry-desc';
+    else if (sortColumn === 'model' && sortOrder === 'asc') matchVal = 'model-asc';
+    else if (sortColumn === 'plate' && sortOrder === 'asc') matchVal = 'plate-asc';
+    else if (sortColumn === 'vehicleNo' && sortOrder === 'asc') matchVal = 'vehicleNo-asc';
+    else if (sortColumn === 'createdAt' && sortOrder === 'desc') matchVal = 'added-desc';
+
+    if (matchVal) {
+      dom.sortSelect.value = matchVal;
+    }
   }
 
   function createVehicleCardElement(v) {
@@ -944,7 +1039,14 @@
     const t = i18n[currentLang];
     dom.modalTitle.textContent = t.modalTitleAdd;
 
-    const nextNo = String(vehicles.length + 1).padStart(3, '0');
+    let maxNo = 0;
+    vehicles.forEach(v => {
+      const num = parseInt(v.vehicleNo, 10);
+      if (!isNaN(num) && num > maxNo) {
+        maxNo = num;
+      }
+    });
+    const nextNo = String(maxNo + 1).padStart(3, '0');
     dom.vehicleNoInput.value = nextNo;
     dom.typeInput.value = '';
     dom.modelInput.value = '';
@@ -1024,8 +1126,20 @@
     const notes = dom.notesInput.value.trim();
     const existingId = dom.carIdInput.value;
 
+    const t = i18n[currentLang];
+    const isDuplicateNo = vehicles.some(v => 
+      v.id !== existingId && 
+      (v.vehicleNo || '').trim().toLowerCase() === vehicleNo.toLowerCase()
+    );
+
     let isValid = true;
-    if (!vehicleNo) { showFieldError('vehicleno', 'Please enter vehicle number'); isValid = false; }
+    if (!vehicleNo) { 
+      showFieldError('vehicleno', t.errVehicleNoRequired || 'Please enter vehicle number'); 
+      isValid = false; 
+    } else if (isDuplicateNo) {
+      showFieldError('vehicleno', t.errDuplicateVehicleNo || 'Vehicle No. must be unique (a vehicle with this number already exists)');
+      isValid = false;
+    }
     if (!type) { showFieldError('type', 'Please enter vehicle type'); isValid = false; }
     if (!model) { showFieldError('model', 'Please enter model'); isValid = false; }
     if (!plate) { showFieldError('plate', 'Please enter plate number'); isValid = false; }
@@ -1035,8 +1149,6 @@
     if (!expiryDate) { showFieldError('expiry', 'Please select expiry date'); isValid = false; }
 
     if (!isValid) return;
-
-    const t = i18n[currentLang];
 
     if (existingId) {
       const index = vehicles.findIndex(v => v.id === existingId);
@@ -1206,8 +1318,18 @@
         }
 
         const newVehicles = [];
+        const usedVehicleNos = new Set();
         jsonRows.forEach((row, i) => {
-          const vehicleNo = String(row['Vehicle No'] || row['رقم المركبة'] || row['No.'] || row['الرقم'] || (i + 1)).padStart(3, '0');
+          let rawNo = String(row['Vehicle No'] || row['رقم المركبة'] || row['No.'] || row['الرقم'] || (i + 1)).padStart(3, '0');
+          let vehicleNo = rawNo;
+          let counter = 1;
+          while (usedVehicleNos.has(vehicleNo.toLowerCase())) {
+            const num = parseInt(rawNo, 10);
+            vehicleNo = String(isNaN(num) ? counter : num + counter).padStart(3, '0');
+            counter++;
+          }
+          usedVehicleNos.add(vehicleNo.toLowerCase());
+
           const type = String(row['Vehicle Type'] || row['نوع المركبة'] || row['Type'] || 'Sedan');
           const model = String(row['Model'] || row['الموديل'] || row['Make & Model'] || 'Vehicle');
           const plate = String(row['Plate No'] || row['رقم اللوحة'] || row['Plate'] || '12345').toUpperCase();
@@ -1269,9 +1391,20 @@
     if (str.includes('/')) {
       const parts = str.split('/');
       if (parts.length === 3) {
-        const month = parts[0].padStart(2, '0');
-        const day = parts[1].padStart(2, '0');
-        const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+        let day, month, year;
+        if (parts[2].length === 4) {
+          day = parts[0].padStart(2, '0');
+          month = parts[1].padStart(2, '0');
+          year = parts[2];
+        } else if (parts[0].length === 4) {
+          year = parts[0];
+          month = parts[1].padStart(2, '0');
+          day = parts[2].padStart(2, '0');
+        } else {
+          day = parts[0].padStart(2, '0');
+          month = parts[1].padStart(2, '0');
+          year = '20' + parts[2];
+        }
         return `${year}-${month}-${day}`;
       }
     }
@@ -1279,8 +1412,8 @@
       const parts = str.split('-');
       if (parts.length === 3) {
         if (parts[0].length === 4) return str;
-        const month = parts[0].padStart(2, '0');
-        const day = parts[1].padStart(2, '0');
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
         const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
         return `${year}-${month}-${day}`;
       }
@@ -1481,7 +1614,12 @@
 
     // Sort Select
     dom.sortSelect.addEventListener('change', (e) => {
-      currentSort = e.target.value;
+      const val = e.target.value;
+      const parts = val.split('-');
+      if (parts.length === 2) {
+        sortColumn = parts[0] === 'expiry' ? 'expiryDate' : parts[0] === 'vehicleno' ? 'vehicleNo' : parts[0] === 'added' ? 'createdAt' : parts[0];
+        sortOrder = parts[1];
+      }
       renderMainViews();
     });
 
