@@ -1233,12 +1233,25 @@ html[dir="rtl"] .license-plate-preview {
 }
 
 /* Highlight cell/column with duplicate value */
+.row-duplicate {
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+
+.row-duplicate:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
 .cell-duplicate-highlight {
   background: rgba(239, 68, 68, 0.22) !important;
   color: #fca5a5 !important;
   font-weight: 800 !important;
   border: 1.5px solid rgba(239, 68, 68, 0.6) !important;
   position: relative;
+}
+
+.car-card.is-duplicate {
+  border: 2px dashed rgba(239, 68, 68, 0.6);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.12) 0%, rgba(239, 68, 68, 0.04) 100%), var(--card-bg);
 }
 
 .duplicate-tag-badge {
