@@ -10,9 +10,6 @@
   const THEME_KEY = 'autovault_theme_pref';
   const LANG_KEY = 'autovault_lang_pref';
 
-  // Initial Vehicles Data (Empty - users add their own vehicles)
-  const INITIAL_DEMO_CARS = [];
-
   // Popular Car Brands & Model Dictionary
   const CAR_BRANDS_DATA = {
     'Toyota': ['Camry', 'Corolla', 'RAV4', 'Land Cruiser', 'Hilux', 'Prado', 'Yaris', 'Avalon', 'Highlander', 'Fortuner', 'Supra', 'Crown', 'Sienna', 'Tacoma', 'Tundra', 'C-HR', 'Corolla Cross', '4Runner'],
@@ -54,8 +51,6 @@
       langBtn: 'العربية',
       exportExcelBtn: 'Export Excel (.xlsx)',
       importExcelBtn: 'Import Excel',
-      exportJsonBtn: 'Export JSON',
-      importJsonBtn: 'Import JSON',
       addCarBtn: '+ Add Vehicle',
       statTotal: 'Total Vehicles',
       statActive: 'Active / Valid',
@@ -117,11 +112,7 @@
       updateSuccess: 'Vehicle updated successfully',
       errDuplicateVehicleNo: 'Vehicle No. must be unique (a vehicle with this number already exists)',
       errVehicleNoRequired: 'Please enter vehicle number',
-      tempDuplicatesTitle: '⚠️ Temporary Section: Duplicate License Plates',
-      tempDuplicatesDesc: 'These imported vehicles match existing license plates in your database. Highlighted column values indicate the duplicate fields.',
-      removeAllDuplicatesBtn: 'Remove All Duplicates',
-      confirmRemoveAllDuplicates: 'Are you sure you want to remove all temporary duplicate vehicles?',
-      duplicatesRemovedSuccess: 'Removed all temporary duplicate vehicles.'
+      duplicateBadgeText: 'DUPLICATE'
     },
     ar: {
       brandTitle: 'أوتو فولت',
@@ -129,8 +120,6 @@
       langBtn: 'English',
       exportExcelBtn: 'تصدير اكسل (.xlsx)',
       importExcelBtn: 'استيراد اكسل',
-      exportJsonBtn: 'تصدير JSON',
-      importJsonBtn: 'استيراد JSON',
       addCarBtn: '+ إضافة مركبة',
       statTotal: 'إجمالي المركبات',
       statActive: 'صالح / نشط',
@@ -192,11 +181,7 @@
       updateSuccess: 'تم تحديث بيانات المركبة بنجاح',
       errDuplicateVehicleNo: 'رقم المركبة يجب أن يكون فريداً (توجد مركبة أخرى بنفس هذا الرقم)',
       errVehicleNoRequired: 'يرجى إدخال رقم المركبة',
-      tempDuplicatesTitle: '⚠️ القسم المؤقت: اللوحات المكررة',
-      tempDuplicatesDesc: 'هذه المركبات المستوردة تطابق أرقام لوحات موجودة سابقاً في قاعدة البيانات. الأعمدة المميزة تعكس البيانات المكررة.',
-      removeAllDuplicatesBtn: 'حذف جميع المكررات',
-      confirmRemoveAllDuplicates: 'هل أنت تأكد من حذف جميع المركبات المكررة المؤقتة؟',
-      duplicatesRemovedSuccess: 'تم حذف جميع المركبات المكررة المؤقتة.'
+      duplicateBadgeText: 'مكرر'
     }
   };
 
@@ -223,13 +208,6 @@
     txtImportExcelBtn: document.getElementById('txt-import-excel-btn'),
     importExcelFileInput: document.getElementById('import-excel-file-input'),
 
-    // JSON Export & Import
-    exportBtn: document.getElementById('export-btn'),
-    txtExportJsonBtn: document.getElementById('txt-export-json-btn'),
-    importBtn: document.getElementById('import-btn'),
-    txtImportJsonBtn: document.getElementById('txt-import-json-btn'),
-    importFileInput: document.getElementById('import-file-input'),
-
     addCarBtn: document.getElementById('add-car-btn'),
     txtAddCarBtn: document.getElementById('txt-add-car-btn'),
     txtBrandTitle: document.getElementById('txt-brand-title'),
@@ -244,9 +222,6 @@
     statActive: document.getElementById('stat-active-count'),
     statExpiring: document.getElementById('stat-expiring-count'),
     statExpired: document.getElementById('stat-expired-count'),
-
-    // Alerts Container
-    urgentAlertsContainer: document.getElementById('urgent-alerts-container'),
 
     // Toolbar Controls
     searchInput: document.getElementById('search-input'),
@@ -324,16 +299,7 @@
 
     // Footer & Toast
     txtFooter: document.getElementById('txt-footer'),
-    toastContainer: document.getElementById('toast-container'),
-
-    // Temporary Duplicates Section Selectors
-    temporaryDuplicatesSection: document.getElementById('temporary-duplicates-section'),
-    temporaryDuplicatesView: document.getElementById('temporary-duplicates-view'),
-    tempDuplicatesCountBadge: document.getElementById('temp-duplicates-count-badge'),
-    removeAllDuplicatesBtn: document.getElementById('remove-all-duplicates-btn'),
-    txtTempDuplicatesTitle: document.getElementById('txt-temp-duplicates-title'),
-    txtTempDuplicatesDesc: document.getElementById('txt-temp-duplicates-desc'),
-    txtRemoveAllDuplicatesBtn: document.getElementById('txt-remove-all-duplicates-btn')
+    toastContainer: document.getElementById('toast-container')
   };
 
   /* ==========================================
@@ -454,8 +420,6 @@
     dom.txtLangBtn.textContent = t.langBtn;
     dom.txtExportExcelBtn.textContent = t.exportExcelBtn;
     dom.txtImportExcelBtn.textContent = t.importExcelBtn;
-    dom.txtExportJsonBtn.textContent = t.exportJsonBtn;
-    dom.txtImportJsonBtn.textContent = t.importJsonBtn;
     dom.txtAddCarBtn.textContent = t.addCarBtn;
 
     // Stats
@@ -480,14 +444,14 @@
     dom.optSortAddedDesc.textContent = t.sortAddedDesc;
 
     // Modal Form Labels
-    if (dom.lblVehicleNo.childNodes[0]) dom.lblVehicleNo.childNodes[0].nodeValue = t.lblVehicleNo + ' ';
-    if (dom.lblVehicleType.childNodes[0]) dom.lblVehicleType.childNodes[0].nodeValue = t.lblVehicleType + ' ';
-    if (dom.lblModel.childNodes[0]) dom.lblModel.childNodes[0].nodeValue = t.lblModel + ' ';
-    if (dom.lblPlate.childNodes[0]) dom.lblPlate.childNodes[0].nodeValue = t.lblPlate + ' ';
-    if (dom.lblDriver.childNodes[0]) dom.lblDriver.childNodes[0].nodeValue = t.lblDriver + ' ';
-    if (dom.lblRegistration.childNodes[0]) dom.lblRegistration.childNodes[0].nodeValue = t.lblRegistration + ' ';
-    if (dom.lblIssueDate.childNodes[0]) dom.lblIssueDate.childNodes[0].nodeValue = t.lblIssueDate + ' ';
-    if (dom.lblExpiryDate.childNodes[0]) dom.lblExpiryDate.childNodes[0].nodeValue = t.lblExpiryDate + ' ';
+    if (dom.lblVehicleNo && dom.lblVehicleNo.childNodes[0]) dom.lblVehicleNo.childNodes[0].nodeValue = t.lblVehicleNo + ' ';
+    if (dom.lblVehicleType && dom.lblVehicleType.childNodes[0]) dom.lblVehicleType.childNodes[0].nodeValue = t.lblVehicleType + ' ';
+    if (dom.lblModel && dom.lblModel.childNodes[0]) dom.lblModel.childNodes[0].nodeValue = t.lblModel + ' ';
+    if (dom.lblPlate && dom.lblPlate.childNodes[0]) dom.lblPlate.childNodes[0].nodeValue = t.lblPlate + ' ';
+    if (dom.lblDriver && dom.lblDriver.childNodes[0]) dom.lblDriver.childNodes[0].nodeValue = t.lblDriver + ' ';
+    if (dom.lblRegistration && dom.lblRegistration.childNodes[0]) dom.lblRegistration.childNodes[0].nodeValue = t.lblRegistration + ' ';
+    if (dom.lblIssueDate && dom.lblIssueDate.childNodes[0]) dom.lblIssueDate.childNodes[0].nodeValue = t.lblIssueDate + ' ';
+    if (dom.lblExpiryDate && dom.lblExpiryDate.childNodes[0]) dom.lblExpiryDate.childNodes[0].nodeValue = t.lblExpiryDate + ' ';
     
     if (dom.txtPopularBrands) dom.txtPopularBrands.textContent = t.lblPopularBrands;
     dom.lblColor.textContent = t.lblColor;
@@ -501,11 +465,6 @@
     if (dom.typeInput) {
       updateBrandAndModelOptions(dom.typeInput.value);
     }
-
-    // Temporary Duplicates Section Labels
-    if (dom.txtTempDuplicatesTitle) dom.txtTempDuplicatesTitle.textContent = t.tempDuplicatesTitle || '⚠️ Temporary Section: Duplicate License Plates';
-    if (dom.txtTempDuplicatesDesc) dom.txtTempDuplicatesDesc.textContent = t.tempDuplicatesDesc || 'These imported vehicles match existing license plates in your database. Highlighted column values indicate the duplicate fields.';
-    if (dom.txtRemoveAllDuplicatesBtn) dom.txtRemoveAllDuplicatesBtn.textContent = t.removeAllDuplicatesBtn || 'Remove All Duplicates';
 
     // Footer
     dom.txtFooter.textContent = t.footerText;
@@ -577,14 +536,56 @@
   /* ==========================================
      Calculation & Expiry Helper Logic
      ========================================== */
+  function normalizeToWesternDigits(str) {
+    if (!str) return '';
+    return String(str).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  }
+
+  function parseDateStandard(dateStr) {
+    if (!dateStr) return new Date();
+    if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? new Date() : dateStr;
+    const cleanStr = normalizeToWesternDigits(String(dateStr)).trim();
+    
+    // Check if ISO format YYYY-MM-DD
+    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(cleanStr)) {
+      const parts = cleanStr.split('T')[0].split('-');
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      const dt = new Date(y, m, d);
+      return isNaN(dt.getTime()) ? new Date() : dt;
+    }
+
+    // Check if DD/MM/YYYY or MM/DD/YYYY
+    if (cleanStr.includes('/')) {
+      const parts = cleanStr.split('/');
+      if (parts.length === 3) {
+        if (parts[2].length === 4) {
+          const d = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10) - 1;
+          const y = parseInt(parts[2], 10);
+          const dt = new Date(y, m, d);
+          return isNaN(dt.getTime()) ? new Date() : dt;
+        } else if (parts[0].length === 4) {
+          const y = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10) - 1;
+          const d = parseInt(parts[2], 10);
+          const dt = new Date(y, m, d);
+          return isNaN(dt.getTime()) ? new Date() : dt;
+        }
+      }
+    }
+
+    const directDate = new Date(cleanStr);
+    return isNaN(directDate.getTime()) ? new Date() : directDate;
+  }
+
   function getExpiryStatusInfo(expiryDateStr) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let expiryDate = new Date(expiryDateStr + 'T00:00:00');
-    if (isNaN(expiryDate.getTime())) {
-      expiryDate = new Date();
-    }
+    const expiryDate = parseDateStandard(expiryDateStr);
+    expiryDate.setHours(0, 0, 0, 0);
 
     const diffTime = expiryDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -640,7 +641,8 @@
 
   function formatDateDisplay(dateStr) {
     if (!dateStr) return '';
-    const parts = dateStr.split('-');
+    const cleanStr = normalizeToWesternDigits(String(dateStr)).trim();
+    const parts = cleanStr.split('T')[0].split('-');
     if (parts.length !== 3) return dateStr;
     const year = parts[0];
     const month = parts[1].padStart(2, '0');
@@ -650,7 +652,8 @@
 
   function formatDateForExcel(dateStr) {
     if (!dateStr) return '';
-    const parts = dateStr.split('-');
+    const cleanStr = normalizeToWesternDigits(String(dateStr)).trim();
+    const parts = cleanStr.split('T')[0].split('-');
     if (parts.length !== 3) return dateStr;
     const year = parts[0];
     const month = parts[1].padStart(2, '0');
@@ -663,19 +666,16 @@
      ========================================== */
   function renderApp() {
     renderStats();
-    renderUrgentAlerts();
-    renderTemporaryDuplicatesSection();
     renderMainViews();
   }
 
   function renderStats() {
-    const regularVehicles = vehicles.filter(v => !v.isDuplicate);
-    let total = regularVehicles.length;
+    let total = vehicles.length;
     let active = 0;
     let expiring = 0;
     let expired = 0;
 
-    regularVehicles.forEach(v => {
+    vehicles.forEach(v => {
       const statusInfo = getExpiryStatusInfo(v.expiryDate);
       if (statusInfo.status === 'active') active++;
       else if (statusInfo.status === 'expiring') expiring++;
@@ -688,132 +688,8 @@
     dom.statExpired.textContent = expired;
   }
 
-  function renderUrgentAlerts() {
-    dom.urgentAlertsContainer.innerHTML = '';
-    const urgentVehicles = vehicles
-      .filter(v => !v.isDuplicate)
-      .map(v => ({ vehicle: v, info: getExpiryStatusInfo(v.expiryDate) }))
-      .filter(item => item.info.status === 'expired' || item.info.status === 'expiring')
-      .sort((a, b) => a.info.diffDays - b.info.diffDays);
-
-    if (urgentVehicles.length === 0) return;
-
-    urgentVehicles.slice(0, 2).forEach(item => {
-      const v = item.vehicle;
-      const info = item.info;
-      const isExpired = info.status === 'expired';
-
-      const banner = document.createElement('div');
-      banner.className = `alert-banner ${isExpired ? 'expired' : 'expiring'}`;
-      banner.innerHTML = `
-        <div class="alert-content">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-          <div>
-            <strong>${escapeHtml(v.model)} (${escapeHtml(v.plate)})</strong>: ${info.timeText} (${info.formattedDate}).
-          </div>
-        </div>
-        <button class="btn btn-sm btn-secondary renew-alert-btn" data-id="${v.id}">
-          +1 ${currentLang === 'ar' ? 'سنة تجديد' : 'Year Renew'}
-        </button>
-      `;
-      banner.querySelector('.renew-alert-btn').addEventListener('click', () => {
-        quickRenewVehicle(v.id);
-      });
-      dom.urgentAlertsContainer.appendChild(banner);
-    });
-  }
-
-  function renderTemporaryDuplicatesSection() {
-    if (!dom.temporaryDuplicatesSection || !dom.temporaryDuplicatesView) return;
-    const tempDuplicates = vehicles.filter(v => v.isDuplicate);
-    if (tempDuplicates.length === 0) {
-      dom.temporaryDuplicatesSection.classList.add('hidden');
-      return;
-    }
-
-    dom.temporaryDuplicatesSection.classList.remove('hidden');
-    dom.tempDuplicatesCountBadge.textContent = tempDuplicates.length;
-
-    const t = i18n[currentLang];
-
-    let html = `
-      <table class="excel-sheet-table">
-        <thead>
-          <tr>
-            <th>${t.colNo}</th>
-            <th>${t.colVehicleNo}</th>
-            <th>${t.colVehicleType}</th>
-            <th>${t.colModel}</th>
-            <th style="background: #991b1b; color: #ffffff;">${t.colPlateNo} (DUPLICATE)</th>
-            <th>${t.colDriverName}</th>
-            <th>${t.colRegistrationNo}</th>
-            <th>${t.colIssueDate}</th>
-            <th>${t.colExpiryDate}</th>
-            <th>${t.colRemarks}</th>
-            <th>${t.colActions}</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
-    tempDuplicates.forEach((v, index) => {
-      html += `
-        <tr>
-          <td class="cell-no">${index + 1}</td>
-          <td class="cell-center cell-num">${escapeHtml(v.vehicleNo || '')}</td>
-          <td>${escapeHtml(v.type || '')}</td>
-          <td><strong>${escapeHtml(v.model || '')}</strong></td>
-          <td class="cell-center cell-num cell-duplicate-highlight">
-            ${escapeHtml(v.plate || '')}
-            <span class="duplicate-tag-badge">DUPLICATE</span>
-          </td>
-          <td>${escapeHtml(v.driverName || '')}</td>
-          <td class="cell-center cell-num">${escapeHtml(v.registrationNo || '')}</td>
-          <td class="cell-center cell-num">${formatDateForExcel(v.issueDate)}</td>
-          <td class="cell-center cell-num">${formatDateForExcel(v.expiryDate)}</td>
-          <td>${escapeHtml(v.remarks || '—')}</td>
-          <td>
-            <div class="excel-actions-cell">
-              <button class="btn btn-secondary btn-sm temp-edit-btn" title="Edit" data-id="${v.id}">✏️</button>
-              <button class="btn btn-danger btn-sm temp-delete-btn" title="Delete" data-id="${v.id}">🗑️ Delete</button>
-            </div>
-          </td>
-        </tr>
-      `;
-    });
-
-    html += `</tbody></table>`;
-    dom.temporaryDuplicatesView.innerHTML = html;
-
-    dom.temporaryDuplicatesView.querySelectorAll('.temp-edit-btn').forEach(btn => {
-      btn.addEventListener('click', () => openModalForEdit(btn.dataset.id));
-    });
-    dom.temporaryDuplicatesView.querySelectorAll('.temp-delete-btn').forEach(btn => {
-      btn.addEventListener('click', () => deleteVehicle(btn.dataset.id));
-    });
-  }
-
-  function removeAllDuplicates() {
-    const tempDuplicates = vehicles.filter(v => v.isDuplicate);
-    if (tempDuplicates.length === 0) return;
-
-    const t = i18n[currentLang];
-    const msg = t.confirmRemoveAllDuplicates || `Are you sure you want to remove all ${tempDuplicates.length} temporary duplicate vehicles?`;
-    if (confirm(msg)) {
-      vehicles = vehicles.filter(v => !v.isDuplicate);
-      saveVehicles();
-      renderApp();
-      showToast(t.duplicatesRemovedSuccess || 'Removed all temporary duplicate vehicles.', 'info');
-    }
-  }
-
   function getFilteredAndSortedVehicles() {
     return vehicles
-      .filter(v => !v.isDuplicate)
       .filter(v => {
         const info = getExpiryStatusInfo(v.expiryDate);
 
@@ -863,11 +739,11 @@
           valA = (a.registrationNo || '').toLowerCase();
           valB = (b.registrationNo || '').toLowerCase();
         } else if (sortColumn === 'issueDate') {
-          valA = new Date(a.issueDate || '1970-01-01').getTime();
-          valB = new Date(b.issueDate || '1970-01-01').getTime();
+          valA = parseDateStandard(a.issueDate).getTime();
+          valB = parseDateStandard(b.issueDate).getTime();
         } else if (sortColumn === 'expiryDate') {
-          valA = new Date(a.expiryDate || '1970-01-01').getTime();
-          valB = new Date(b.expiryDate || '1970-01-01').getTime();
+          valA = parseDateStandard(a.expiryDate).getTime();
+          valB = parseDateStandard(b.expiryDate).getTime();
         } else if (sortColumn === 'daysRemaining') {
           valA = getExpiryStatusInfo(a.expiryDate).diffDays;
           valB = getExpiryStatusInfo(b.expiryDate).diffDays;
@@ -1002,13 +878,19 @@
         statusPillClass = 'expired';
       }
 
+      const isDup = !!v.isDuplicate;
+      const dupBadgeLabel = t.duplicateBadgeText || 'DUPLICATE';
+
       html += `
-        <tr>
+        <tr class="${isDup ? 'row-duplicate' : ''}">
           <td class="cell-no">${index + 1}</td>
           <td class="cell-center cell-num">${escapeHtml(v.vehicleNo || '')}</td>
           <td>${escapeHtml(v.type || '')}</td>
           <td><strong>${escapeHtml(v.model || '')}</strong></td>
-          <td class="cell-center cell-num">${escapeHtml(v.plate || '')}</td>
+          <td class="cell-center cell-num ${isDup ? 'cell-duplicate-highlight' : ''}">
+            ${escapeHtml(v.plate || '')}
+            ${isDup ? `<span class="duplicate-tag-badge">${dupBadgeLabel}</span>` : ''}
+          </td>
           <td>${escapeHtml(v.driverName || '')}</td>
           <td class="cell-center cell-num">${escapeHtml(v.registrationNo || '')}</td>
           <td class="cell-center cell-num">${formatDateForExcel(v.issueDate)}</td>
@@ -1076,14 +958,17 @@
   function createVehicleCardElement(v) {
     const info = getExpiryStatusInfo(v.expiryDate);
     const t = i18n[currentLang];
+    const isDup = !!v.isDuplicate;
+    const dupBadgeLabel = t.duplicateBadgeText || 'DUPLICATE';
 
     const card = document.createElement('div');
-    card.className = `car-card status-${info.status}`;
+    card.className = `car-card status-${info.status} ${isDup ? 'is-duplicate' : ''}`;
     card.innerHTML = `
       <div class="car-card-header">
-        <div class="license-plate">
+        <div class="license-plate ${isDup ? 'cell-duplicate-highlight' : ''}">
           <div class="plate-header">VEHICLE NO: ${escapeHtml(v.vehicleNo || '000')}</div>
           <div class="plate-number">${escapeHtml(v.plate || '')}</div>
+          ${isDup ? `<div style="text-align: center; margin-top: 2px;"><span class="duplicate-tag-badge">${dupBadgeLabel}</span></div>` : ''}
         </div>
         <div class="car-title-row">
           <div>
@@ -1287,6 +1172,7 @@
         showToast(`${t.updateSuccess}: ${model} (${plate.toUpperCase()})`, 'success');
       }
     } else {
+      const isDuplicatePlate = vehicles.some(v => (v.plate || '').trim().toUpperCase() === plate.toUpperCase());
       const newVehicle = {
         id: 'car_' + Date.now(),
         vehicleNo,
@@ -1301,6 +1187,7 @@
         colorName,
         remarks,
         notes,
+        isDuplicate: isDuplicatePlate,
         createdAt: Date.now()
       };
       vehicles.push(newVehicle);
@@ -1326,7 +1213,7 @@
     const v = vehicles.find(item => item.id === id);
     if (!v) return;
 
-    const currentDateObj = new Date((v.expiryDate || getOffsetDateString(0)) + 'T00:00:00');
+    const currentDateObj = parseDateStandard(v.expiryDate || getOffsetDateString(0));
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -1349,7 +1236,7 @@
     if (!v) return;
 
     const t = i18n[currentLang];
-    if (confirm(`${t.deleteConfirm} "${v.model} (${v.plate})"?`)) {
+    if (confirm(`${t.deleteConfirm}: ${v.model} (${v.plate})?`)) {
       vehicles = vehicles.filter(item => item.id !== id);
       saveVehicles();
       renderApp();
@@ -1358,7 +1245,7 @@
   }
 
   /* ==========================================
-     Excel (.xlsx) Export & Import Handlers
+     Excel File Export & Import (.xlsx)
      ========================================== */
   function exportToExcel() {
     if (vehicles.length === 0) {
@@ -1367,17 +1254,11 @@
     }
 
     try {
-      const dataToExport = getFilteredAndSortedVehicles().map((v, index) => {
+      const isAr = currentLang === 'ar';
+      const dataToExport = vehicles.map((v, idx) => {
         const info = getExpiryStatusInfo(v.expiryDate);
-        const isAr = currentLang === 'ar';
-
-        let statusText = 'Valid';
-        if (info.status === 'expiring') statusText = isAr ? 'ينتهي قريباً' : 'Expiring Soon';
-        else if (info.status === 'expired') statusText = isAr ? 'منتهي الصلاحية' : 'Expired';
-        else statusText = isAr ? 'صالح' : 'Valid';
-
         return {
-          [isAr ? 'الرقم' : 'No.']: index + 1,
+          [isAr ? 'الرقم' : 'No.']: idx + 1,
           [isAr ? 'رقم المركبة' : 'Vehicle No']: v.vehicleNo || '',
           [isAr ? 'نوع المركبة' : 'Vehicle Type']: v.type || '',
           [isAr ? 'الموديل' : 'Model']: v.model || '',
@@ -1387,16 +1268,16 @@
           [isAr ? 'تاريخ الإصدار' : 'Issue Date']: formatDateForExcel(v.issueDate),
           [isAr ? 'تاريخ الانتهاء' : 'Expiry Date']: formatDateForExcel(v.expiryDate),
           [isAr ? 'الأيام المتبقية' : 'Days Remaining']: info.diffDays,
-          [isAr ? 'الحالة' : 'Status']: statusText,
-          [isAr ? 'ملاحظات' : 'Remarks']: v.remarks || '—'
+          [isAr ? 'الحالة' : 'Status']: info.statusLabel,
+          [isAr ? 'ملاحظات' : 'Remarks']: v.remarks || '—',
+          [isAr ? 'مكرر' : 'Is Duplicate']: v.isDuplicate ? 'YES' : 'NO'
         };
       });
 
       if (window.XLSX) {
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Vehicle Registrations');
-
+        XLSX.utils.book_append_sheet(workbook, worksheet, isAr ? 'سجل_المركبات' : 'Vehicles');
         const fileName = `Vehicle_Registration_Tracker_${new Date().toISOString().split('T')[0]}.xlsx`;
         XLSX.writeFile(workbook, fileName);
         showToast(currentLang === 'ar' ? 'تم تصدير ملف Excel بنجاح!' : 'Exported Excel (.xlsx) file successfully!', 'success');
@@ -1490,8 +1371,8 @@
 
         if (duplicateCount > 0) {
           const msg = currentLang === 'ar'
-            ? `تم استيراد ${newVehicles.length} مركبة بنجاح! (${duplicateCount} مركبة تمت إضافتها إلى قسم المكررات بسبب تكرار اللوحة)`
-            : `Successfully imported ${newVehicles.length} vehicles! (${duplicateCount} vehicle(s) moved to Temporary Duplicates section due to duplicate license plate)`;
+            ? `تم استيراد ${newVehicles.length} مركبة بنجاح! (${duplicateCount} مركبة مكررة تم تمييزها في الجدول الرئيسي)`
+            : `Successfully imported ${newVehicles.length} vehicles! (${duplicateCount} duplicate vehicle(s) highlighted in the main table)`;
           showToast(msg, 'warning');
         } else {
           showToast(currentLang === 'ar' ? `تم استيراد ${newVehicles.length} مركبة بنجاح!` : `Successfully imported ${newVehicles.length} vehicles!`, 'success');
@@ -1516,7 +1397,7 @@
         return dateObj.toISOString().split('T')[0];
       }
     }
-    const str = String(val).trim();
+    const str = normalizeToWesternDigits(String(val)).trim();
     if (str.includes('/')) {
       const parts = str.split('/');
       if (parts.length === 3) {
@@ -1573,84 +1454,6 @@
     showToast('Exported CSV file successfully!', 'success');
   }
 
-  function exportVehiclesJSON() {
-    if (vehicles.length === 0) {
-      showToast('No vehicle records to export!', 'warning');
-      return;
-    }
-    const jsonStr = JSON.stringify(vehicles, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `autovault_vehicles_backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('Exported JSON backup file successfully!', 'success');
-  }
-
-  function importVehiclesJSON(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function (event) {
-      try {
-        const importedData = JSON.parse(event.target.result);
-        if (!Array.isArray(importedData)) {
-          throw new Error('Invalid file format.');
-        }
-
-        const existingPlates = new Set(vehicles.map(v => (v.plate || '').trim().toUpperCase()));
-        let duplicateCount = 0;
-        const newVehicles = [];
-
-        importedData.forEach((item, i) => {
-          if (item.model && item.expiryDate) {
-            const plate = (item.plate || '').trim().toUpperCase();
-            const isDuplicate = existingPlates.has(plate);
-            if (isDuplicate) {
-              duplicateCount++;
-            } else if (plate) {
-              existingPlates.add(plate);
-            }
-
-            newVehicles.push({
-              ...item,
-              id: item.id || ('car_' + Date.now() + '_' + i),
-              plate,
-              isDuplicate: isDuplicate,
-              createdAt: item.createdAt || (Date.now() + i)
-            });
-          }
-        });
-
-        if (newVehicles.length === 0) {
-          showToast('No valid vehicle records found in imported file.', 'error');
-          return;
-        }
-
-        // APPEND imported JSON vehicles onto existing list
-        vehicles = vehicles.concat(newVehicles);
-        saveVehicles();
-        renderApp();
-
-        if (duplicateCount > 0) {
-          showToast(`Successfully imported ${newVehicles.length} vehicles! (${duplicateCount} moved to Temporary Duplicates section due to duplicate license plate)`, 'warning');
-        } else {
-          showToast(`Successfully imported ${newVehicles.length} vehicles!`, 'success');
-        }
-      } catch (err) {
-        console.error(err);
-        showToast('Failed to import JSON file.', 'error');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  }
-
   /* ==========================================
      Toast Notifications & Escape Helpers
      ========================================== */
@@ -1663,6 +1466,8 @@
       iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
     } else if (type === 'error') {
       iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+    } else if (type === 'warning') {
+      iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
     } else {
       iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
     }
@@ -1707,22 +1512,12 @@
     dom.importExcelBtn.addEventListener('click', () => dom.importExcelFileInput.click());
     dom.importExcelFileInput.addEventListener('change', importFromExcel);
 
-    // Export & Import JSON
-    dom.exportBtn.addEventListener('click', exportVehiclesJSON);
-    dom.importBtn.addEventListener('click', () => dom.importFileInput.click());
-    dom.importFileInput.addEventListener('change', importVehiclesJSON);
-
     // Modal Triggers & Form
     dom.addCarBtn.addEventListener('click', openModalForAdd);
     dom.emptyActionBtn.addEventListener('click', openModalForAdd);
     dom.closeModalBtn.addEventListener('click', closeModal);
     dom.cancelModalBtn.addEventListener('click', closeModal);
     dom.carForm.addEventListener('submit', handleFormSubmit);
-
-    // Remove All Duplicates Button
-    if (dom.removeAllDuplicatesBtn) {
-      dom.removeAllDuplicatesBtn.addEventListener('click', removeAllDuplicates);
-    }
 
     // Live Plate Preview Typing Sync
     dom.plateInput.addEventListener('input', (e) => {
