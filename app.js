@@ -112,7 +112,11 @@
       updateSuccess: 'Vehicle updated successfully',
       errDuplicateVehicleNo: 'Vehicle No. must be unique (a vehicle with this number already exists)',
       errVehicleNoRequired: 'Please enter vehicle number',
-      duplicateBadgeText: 'DUPLICATE'
+      duplicateBadgeText: 'DUPLICATE',
+      removeDuplicatesBtn: 'Remove Duplicates',
+      removeDuplicatesConfirm: 'Are you sure you want to remove {count} duplicate vehicle record(s)?',
+      removeDuplicatesSuccess: 'Successfully removed {count} duplicate vehicle(s)',
+      noDuplicatesFound: 'No duplicate vehicle records found'
     },
     ar: {
       brandTitle: 'أوتو فولت',
@@ -181,7 +185,11 @@
       updateSuccess: 'تم تحديث بيانات المركبة بنجاح',
       errDuplicateVehicleNo: 'رقم المركبة يجب أن يكون فريداً (توجد مركبة أخرى بنفس هذا الرقم)',
       errVehicleNoRequired: 'يرجى إدخال رقم المركبة',
-      duplicateBadgeText: 'مكرر'
+      duplicateBadgeText: 'مكرر',
+      removeDuplicatesBtn: 'حذف المكررات',
+      removeDuplicatesConfirm: 'هل أنت تأكد من حذف {count} مركبة مكررة؟',
+      removeDuplicatesSuccess: 'تم حذف {count} مركبة مكررة بنجاح',
+      noDuplicatesFound: 'لا توجد سجلات مركبات مكررة'
     }
   };
 
@@ -201,12 +209,14 @@
     langToggleBtn: document.getElementById('lang-toggle-btn'),
     txtLangBtn: document.getElementById('txt-lang-btn'),
     
-    // Excel Export & Import
+    // Excel Export & Import & Remove Duplicates
     exportExcelBtn: document.getElementById('export-excel-btn'),
     txtExportExcelBtn: document.getElementById('txt-export-excel-btn'),
     importExcelBtn: document.getElementById('import-excel-btn'),
     txtImportExcelBtn: document.getElementById('txt-import-excel-btn'),
     importExcelFileInput: document.getElementById('import-excel-file-input'),
+    removeDuplicatesBtn: document.getElementById('remove-duplicates-btn'),
+    txtRemoveDuplicatesBtn: document.getElementById('txt-remove-duplicates-btn'),
 
     addCarBtn: document.getElementById('add-car-btn'),
     txtAddCarBtn: document.getElementById('txt-add-car-btn'),
@@ -420,6 +430,7 @@
     dom.txtLangBtn.textContent = t.langBtn;
     dom.txtExportExcelBtn.textContent = t.exportExcelBtn;
     dom.txtImportExcelBtn.textContent = t.importExcelBtn;
+    if (dom.txtRemoveDuplicatesBtn) dom.txtRemoveDuplicatesBtn.textContent = t.removeDuplicatesBtn;
     dom.txtAddCarBtn.textContent = t.addCarBtn;
 
     // Stats
@@ -1038,16 +1049,7 @@
 
     const t = i18n[currentLang];
     dom.modalTitle.textContent = t.modalTitleAdd;
-
-    let maxNo = 0;
-    vehicles.forEach(v => {
-      const num = parseInt(v.vehicleNo, 10);
-      if (!isNaN(num) && num > maxNo) {
-        maxNo = num;
-      }
-    });
-    const nextNo = String(maxNo + 1).padStart(3, '0');
-    dom.vehicleNoInput.value = nextNo;
+    dom.vehicleNoInput.value = getNextVehicleNo();
     dom.typeInput.value = '';
     dom.modelInput.value = '';
     updateBrandAndModelOptions('');
@@ -1112,7 +1114,12 @@
     e.preventDefault();
     clearFormErrors();
 
-    const vehicleNo = dom.vehicleNoInput.value.trim();
+    let vehicleNo = dom.vehicleNoInput.value.trim();
+    if (!vehicleNo) {
+      vehicleNo = getNextVehicleNo();
+      dom.vehicleNoInput.value = vehicleNo;
+    }
+
     const type = dom.typeInput.value.trim();
     const model = dom.modelInput.value.trim();
     const plate = dom.plateInput.value.trim();
@@ -1133,10 +1140,7 @@
     );
 
     let isValid = true;
-    if (!vehicleNo) { 
-      showFieldError('vehicleno', t.errVehicleNoRequired || 'Please enter vehicle number'); 
-      isValid = false; 
-    } else if (isDuplicateNo) {
+    if (isDuplicateNo) {
       showFieldError('vehicleno', t.errDuplicateVehicleNo || 'Vehicle No. must be unique (a vehicle with this number already exists)');
       isValid = false;
     }
@@ -1241,6 +1245,72 @@
       saveVehicles();
       renderApp();
       showToast(t.deleteSuccess, 'info');
+    }
+  }
+
+  function getNextVehicleNo() {
+    let maxNo = 0;
+    vehicles.forEach(v => {
+      const cleanNo = normalizeToWesternDigits(v.vehicleNo || '');
+      const num = parseInt(cleanNo, 10);
+      if (!isNaN(num) && num > maxNo) {
+        maxNo = num;
+      }
+    });
+    return String(maxNo + 1).padStart(3, '0');
+  }
+
+  function removeDuplicates() {
+    if (vehicles.length === 0) {
+      const t = i18n[currentLang];
+      showToast(t.noDuplicatesFound || 'No duplicate vehicle records found', 'info');
+      return;
+    }
+
+    const seenPlates = new Set();
+    const seenVehicleNos = new Set();
+    const uniqueVehicles = [];
+    let removedCount = 0;
+
+    vehicles.forEach(v => {
+      const plateKey = (v.plate || '').trim().toUpperCase();
+      const vehicleNoKey = (v.vehicleNo || '').trim().toLowerCase();
+
+      let isDup = false;
+      if (plateKey && seenPlates.has(plateKey)) {
+        isDup = true;
+      } else if (vehicleNoKey && seenVehicleNos.has(vehicleNoKey)) {
+        isDup = true;
+      } else if (v.isDuplicate) {
+        // If flag is explicitly set from import collision with previous record
+        isDup = true;
+      }
+
+      if (isDup) {
+        removedCount++;
+      } else {
+        if (plateKey) seenPlates.add(plateKey);
+        if (vehicleNoKey) seenVehicleNos.add(vehicleNoKey);
+        uniqueVehicles.push({ ...v, isDuplicate: false });
+      }
+    });
+
+    const t = i18n[currentLang];
+    if (removedCount === 0) {
+      showToast(t.noDuplicatesFound || 'No duplicate vehicle records found', 'info');
+      return;
+    }
+
+    const confirmMsg = (t.removeDuplicatesConfirm || 'Are you sure you want to remove {count} duplicate vehicle record(s)?')
+      .replace('{count}', removedCount);
+
+    if (confirm(confirmMsg)) {
+      vehicles = uniqueVehicles;
+      saveVehicles();
+      renderApp();
+      const successMsg = (t.removeDuplicatesSuccess || 'Successfully removed {count} duplicate vehicle(s)')
+        .replace('{count}', removedCount);
+      showToast(successMsg, 'success');
     }
   }
 
@@ -1507,10 +1577,13 @@
     dom.themeToggleBtn.addEventListener('click', toggleTheme);
     dom.langToggleBtn.addEventListener('click', toggleLanguage);
 
-    // Export & Import Excel
+    // Export & Import Excel & Remove Duplicates
     dom.exportExcelBtn.addEventListener('click', exportToExcel);
     dom.importExcelBtn.addEventListener('click', () => dom.importExcelFileInput.click());
     dom.importExcelFileInput.addEventListener('change', importFromExcel);
+    if (dom.removeDuplicatesBtn) {
+      dom.removeDuplicatesBtn.addEventListener('click', removeDuplicates);
+    }
 
     // Modal Triggers & Form
     dom.addCarBtn.addEventListener('click', openModalForAdd);
