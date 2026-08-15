@@ -1327,4 +1327,131 @@ html[dir="rtl"] .duplicate-tag-badge {
   max-width: 460px;
 }
 
+/* ==========================================
+   Unknown Make & Model Highlighting & Banner
+   ========================================== */
+.row-unknown {
+  background: rgba(245, 158, 11, 0.1) !important;
+}
+
+.row-unknown:hover {
+  background: rgba(245, 158, 11, 0.18) !important;
+}
+
+.cell-unknown-highlight {
+  background: rgba(245, 158, 11, 0.22) !important;
+  color: #fcd34d !important;
+  font-weight: 800 !important;
+  border: 1.5px dashed rgba(245, 158, 11, 0.7) !important;
+  position: relative;
+}
+
+.car-card.is-unknown {
+  border: 2px dashed rgba(245, 158, 11, 0.7);
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.04) 100%), var(--card-bg);
+}
+
+.unknown-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--status-amber);
+  color: #0f172a;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  margin-left: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+html[dir="rtl"] .unknown-tag-badge {
+  margin-left: 0;
+  margin-right: 0.4rem;
+}
+
+.filter-tab-unknown {
+  background: rgba(245, 158, 11, 0.18);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.filter-tab-unknown.active, .filter-tab-unknown:hover {
+  background: #f59e0b;
+  color: #0f172a;
+}
+
+.btn-amber-soft {
+  background: rgba(245, 158, 11, 0.16);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-amber-soft:hover {
+  background: #f59e0b;
+  color: #0f172a;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Banner for imported unknown vehicles */
+.unknown-alert-banner {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.4rem;
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15);
+}
+
+.unknown-alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.unknown-alert-info {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.unknown-alert-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.25);
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.unknown-alert-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.unknown-alert-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.unknown-alert-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+
 
