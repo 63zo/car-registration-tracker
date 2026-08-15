@@ -1352,37 +1352,33 @@
       isValid = false;
     }
 
-    // Enforce Choosing from Existing Makes & Models (to prevent typos)
+    // Process Brand & Model (if not in dictionary, register as custom so user can edit/save without error)
     let canonicalType = type;
     let canonicalModel = model;
 
     if (!type) {
       showFieldError('type', 'Please enter vehicle type / make');
       isValid = false;
+    } else if (!model) {
+      showFieldError('model', 'Please enter vehicle model');
+      isValid = false;
     } else {
       const matchedBrandKey = findMatchingBrandKey(type);
-      if (!matchedBrandKey) {
-        showFieldError('type', t.errMakeNotInList || 'Please select a valid make from the list (or click "+ Add New Make or Model to List").');
-        isValid = false;
-      } else {
-        canonicalType = matchedBrandKey;
-        const allBrands = getMergedBrandsData();
-        const availableModels = allBrands[matchedBrandKey] || [];
-        
-        if (!model) {
-          showFieldError('model', 'Please enter vehicle model');
-          isValid = false;
-        } else {
-          const matchedModel = availableModels.find(m => m.toLowerCase() === model.toLowerCase());
-          if (!matchedModel) {
-            const msg = (t.errModelNotInList || 'Please select a valid model for {brand} from the list (or click "+ Add New Make or Model to List").')
-              .replace('{brand}', matchedBrandKey);
-            showFieldError('model', msg);
-            isValid = false;
-          } else {
-            canonicalModel = matchedModel;
-          }
-        }
+      canonicalType = matchedBrandKey || type;
+
+      const allBrands = getMergedBrandsData();
+      const availableModels = allBrands[canonicalType] || [];
+      const matchedModel = availableModels.find(m => m.toLowerCase() === model.toLowerCase());
+      canonicalModel = matchedModel || model;
+
+      // Auto-register to custom brands list if new make or model
+      if (!customBrandsData[canonicalType]) {
+        customBrandsData[canonicalType] = [];
+      }
+      if (!customBrandsData[canonicalType].some(m => m.toLowerCase() === canonicalModel.toLowerCase())) {
+        customBrandsData[canonicalType].push(canonicalModel);
+        saveCustomBrands();
+        populateBrandDatalist();
       }
     }
 
