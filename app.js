@@ -128,7 +128,17 @@
       btnSaveCustomMake: 'Save & Select',
       errMakeNotInList: 'Please select a valid car make from the existing list to avoid typos (or click "+ Add New Make or Model to List").',
       errModelNotInList: 'Please select a valid model for {brand} from the existing list to avoid typos (or click "+ Add New Make or Model to List").',
-      customMakeAddedSuccess: 'Successfully added custom make & model: {make} - {model}'
+      customMakeAddedSuccess: 'Successfully added custom make & model: {make} - {model}',
+      unknownBadgeText: 'UNKNOWN MAKE/MODEL',
+      unknownBannerTitle: 'Unrecognized Car Makes / Models Detected',
+      unknownBannerDesc: '{count} imported vehicle record(s) have makes or models not currently listed in the system.',
+      btnAddUnknownsToList: '+ Add All to Known List',
+      btnDeleteAllUnknowns: 'Delete All Unknowns ({count})',
+      btnQuickAddMakeModel: '+ Add Make/Model to List',
+      deleteAllUnknownsConfirm: 'Are you sure you want to delete all {count} unrecognized vehicle record(s)?',
+      deleteAllUnknownsSuccess: 'Successfully deleted {count} unrecognized vehicle(s)',
+      addAllUnknownsSuccess: 'Successfully registered {count} unknown make(s)/model(s) into your system list!',
+      importedWithUnknownsWarn: 'Imported {total} vehicles! ({count} vehicle(s) have unlisted makes/models and are highlighted for review)'
     },
     ar: {
       brandTitle: 'أوتو فولت',
@@ -209,7 +219,17 @@
       btnSaveCustomMake: 'حفظ واختيار',
       errMakeNotInList: 'يرجى اختيار ماركة سيارة من القائمة المتاحة لتجنب الأخطاء الإملائية (أو انقر على "+ إضافة ماركة أو موديل جديد").',
       errModelNotInList: 'يرجى اختيار موديل صالح لـ {brand} من القائمة المتاحة لتجنب الأخطاء الإملائية (أو انقر على "+ إضافة ماركة أو موديل جديد").',
-      customMakeAddedSuccess: 'تمت إضافة الماركة والموديل الجديد بنجاح: {make} - {model}'
+      customMakeAddedSuccess: 'تمت إضافة الماركة والموديل الجديد بنجاح: {make} - {model}',
+      unknownBadgeText: 'ماركة/موديل غير معروف',
+      unknownBannerTitle: 'تم اكتشاف ماركات أو موديلات غير مسجلة',
+      unknownBannerDesc: 'يوجد {count} مركبة مستوردة تحتوي على ماركة أو موديل غير مسجل بالنظام.',
+      btnAddUnknownsToList: '+ إضافة الكل لقائمة الماركات',
+      btnDeleteAllUnknowns: 'حذف جميع المجهولة ({count})',
+      btnQuickAddMakeModel: '+ إضافتها للقائمة',
+      deleteAllUnknownsConfirm: 'هل أنت تأكد من حذف جميع المركبات المجهولة الماركة/الموديل وعددها {count}؟',
+      deleteAllUnknownsSuccess: 'تم حذف {count} مركبة غير معروفة بنجاح',
+      addAllUnknownsSuccess: 'تم تسجيل {count} ماركة/موديل في قائمة النظام بنجاح!',
+      importedWithUnknownsWarn: 'تم استيراد {total} مركبة! ({count} مركبة تحتوي على ماركة/موديل غير مسجل تم تمييزها للمراجعة)'
     }
   };
 
@@ -261,6 +281,8 @@
     tabActive: document.getElementById('tab-active'),
     tabExpiring: document.getElementById('tab-expiring'),
     tabExpired: document.getElementById('tab-expired'),
+    tabUnknown: document.getElementById('tab-unknown'),
+    urgentAlertsContainer: document.getElementById('urgent-alerts-container'),
     sortSelect: document.getElementById('sort-select'),
     optSortExpiryAsc: document.getElementById('opt-sort-expiry-asc'),
     optSortExpiryDesc: document.getElementById('opt-sort-expiry-desc'),
@@ -773,6 +795,7 @@
      ========================================== */
   function renderApp() {
     renderStats();
+    renderUnknownBanner();
     renderMainViews();
   }
 
@@ -789,10 +812,78 @@
       else if (statusInfo.status === 'expired') expired++;
     });
 
-    dom.statTotal.textContent = total;
-    dom.statActive.textContent = active;
-    dom.statExpiring.textContent = expiring;
-    dom.statExpired.textContent = expired;
+    if (dom.statTotal) dom.statTotal.textContent = total;
+    if (dom.statActive) dom.statActive.textContent = active;
+    if (dom.statExpiring) dom.statExpiring.textContent = expiring;
+    if (dom.statExpired) dom.statExpired.textContent = expired;
+  }
+
+  function renderUnknownBanner() {
+    if (!dom.urgentAlertsContainer) return;
+    const unknownVehicles = vehicles.filter(v => v.isUnknownMakeModel);
+    const count = unknownVehicles.length;
+
+    // Update filter tab UI
+    if (dom.tabUnknown) {
+      if (count > 0) {
+        dom.tabUnknown.classList.remove('hidden');
+        dom.tabUnknown.textContent = currentLang === 'ar' 
+          ? `غير معروفة (${count})` 
+          : `Unknown Make/Model (${count})`;
+      } else {
+        dom.tabUnknown.classList.add('hidden');
+        if (currentFilter === 'unknown') {
+          currentFilter = 'all';
+          dom.filterTabs.forEach(t => t.classList.remove('active'));
+          if (dom.tabAll) dom.tabAll.classList.add('active');
+        }
+      }
+    }
+
+    if (count === 0) {
+      dom.urgentAlertsContainer.innerHTML = '';
+      return;
+    }
+
+    const t = i18n[currentLang];
+    const titleText = t.unknownBannerTitle || 'Unrecognized Car Makes / Models Detected';
+    const descText = (t.unknownBannerDesc || '{count} imported vehicle record(s) have makes or models not currently listed in the system.')
+      .replace('{count}', count);
+
+    const bannerHtml = `
+      <div class="unknown-alert-banner">
+        <div class="unknown-alert-header">
+          <div class="unknown-alert-info">
+            <div class="unknown-alert-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+              <div class="unknown-alert-title">${escapeHtml(titleText)}</div>
+              <div class="unknown-alert-desc">${escapeHtml(descText)}</div>
+            </div>
+          </div>
+          <div class="unknown-alert-actions">
+            <button id="add-all-unknowns-btn" class="btn btn-amber-soft btn-sm" title="Add all unknown makes/models to system list">
+              ${escapeHtml(t.btnAddUnknownsToList || '+ Add All to Known List')}
+            </button>
+            <button id="delete-all-unknowns-btn" class="btn btn-danger-soft btn-sm" title="Delete all unknown vehicle records">
+              ${escapeHtml((t.btnDeleteAllUnknowns || 'Delete All Unknowns ({count})').replace('{count}', count))}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    dom.urgentAlertsContainer.innerHTML = bannerHtml;
+
+    const addAllBtn = document.getElementById('add-all-unknowns-btn');
+    if (addAllBtn) {
+      addAllBtn.addEventListener('click', addAllUnknownsToKnownList);
+    }
+    const deleteAllBtn = document.getElementById('delete-all-unknowns-btn');
+    if (deleteAllBtn) {
+      deleteAllBtn.addEventListener('click', deleteAllUnknownVehicles);
+    }
   }
 
   function getFilteredAndSortedVehicles() {
@@ -804,6 +895,7 @@
         if (currentFilter === 'active' && info.status !== 'active') return false;
         if (currentFilter === 'expiring' && info.status !== 'expiring') return false;
         if (currentFilter === 'expired' && info.status !== 'expired') return false;
+        if (currentFilter === 'unknown' && !v.isUnknownMakeModel) return false;
 
         // Search query: Search across Model, Vehicle No, Plate, Driver, Registration No, Type
         if (searchQuery.trim() !== '') {
@@ -987,13 +1079,18 @@
 
       const isDup = !!v.isDuplicate;
       const dupBadgeLabel = t.duplicateBadgeText || 'DUPLICATE';
+      const isUnknown = !!v.isUnknownMakeModel;
+      const unknownBadgeLabel = t.unknownBadgeText || 'UNKNOWN MAKE/MODEL';
 
       html += `
-        <tr class="${isDup ? 'row-duplicate' : ''}">
+        <tr class="${isUnknown ? 'row-unknown' : isDup ? 'row-duplicate' : ''}">
           <td class="cell-no">${index + 1}</td>
           <td class="cell-center cell-num">${escapeHtml(v.vehicleNo || '')}</td>
-          <td>${escapeHtml(v.type || '')}</td>
-          <td><strong>${escapeHtml(v.model || '')}</strong></td>
+          <td class="${isUnknown ? 'cell-unknown-highlight' : ''}">${escapeHtml(v.type || '')}</td>
+          <td class="${isUnknown ? 'cell-unknown-highlight' : ''}">
+            <strong>${escapeHtml(v.model || '')}</strong>
+            ${isUnknown ? `<br><span class="unknown-tag-badge">⚠️ ${unknownBadgeLabel}</span>` : ''}
+          </td>
           <td class="cell-center cell-num ${isDup ? 'cell-duplicate-highlight' : ''}">
             ${escapeHtml(v.plate || '')}
             ${isDup ? `<span class="duplicate-tag-badge">${dupBadgeLabel}</span>` : ''}
@@ -1009,6 +1106,7 @@
           <td>${escapeHtml(v.remarks || '—')}</td>
           <td>
             <div class="excel-actions-cell">
+              ${isUnknown ? `<button class="btn btn-amber-soft btn-sm quick-add-make-btn" title="Add make & model to system list" data-id="${v.id}">${t.btnQuickAddMakeModel || '+ Add to List'}</button>` : ''}
               <button class="btn btn-secondary btn-sm renew-btn" title="Renew +1 Year" data-id="${v.id}">+1Yr</button>
               <button class="btn btn-secondary btn-sm edit-btn" title="Edit" data-id="${v.id}">✏️</button>
               <button class="btn btn-secondary btn-sm delete-btn" title="Delete" data-id="${v.id}" style="color: var(--status-red);">🗑️</button>
@@ -1036,6 +1134,9 @@
       });
     });
 
+    dom.excelViewContainer.querySelectorAll('.quick-add-make-btn').forEach(btn => {
+      btn.addEventListener('click', () => quickAddVehicleMakeModel(btn.dataset.id));
+    });
     dom.excelViewContainer.querySelectorAll('.renew-btn').forEach(btn => {
       btn.addEventListener('click', () => quickRenewVehicle(btn.dataset.id));
     });
@@ -1067,9 +1168,11 @@
     const t = i18n[currentLang];
     const isDup = !!v.isDuplicate;
     const dupBadgeLabel = t.duplicateBadgeText || 'DUPLICATE';
+    const isUnknown = !!v.isUnknownMakeModel;
+    const unknownBadgeLabel = t.unknownBadgeText || 'UNKNOWN MAKE/MODEL';
 
     const card = document.createElement('div');
-    card.className = `car-card status-${info.status} ${isDup ? 'is-duplicate' : ''}`;
+    card.className = `car-card status-${info.status} ${isUnknown ? 'is-unknown' : isDup ? 'is-duplicate' : ''}`;
     card.innerHTML = `
       <div class="car-card-header">
         <div class="license-plate ${isDup ? 'cell-duplicate-highlight' : ''}">
@@ -1079,12 +1182,15 @@
         </div>
         <div class="car-title-row">
           <div>
-            <h3 class="car-model-name">${escapeHtml(v.model || '')}</h3>
+            <h3 class="car-model-name">
+              ${escapeHtml(v.model || '')}
+              ${isUnknown ? `<span class="unknown-tag-badge">⚠️ ${unknownBadgeLabel}</span>` : ''}
+            </h3>
             <div style="margin-top: 0.35rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
               <span class="type-badge" style="background: rgba(59, 130, 246, 0.18); color: #60a5fa; font-weight: 700; border: 1px solid rgba(59, 130, 246, 0.3);">
                 🚘 No: ${escapeHtml(v.vehicleNo || '—')}
               </span>
-              <span class="type-badge">
+              <span class="type-badge ${isUnknown ? 'cell-unknown-highlight' : ''}">
                 <span class="color-dot" style="background-color: ${escapeHtml(v.color || '#3B82F6')}"></span>
                 ${escapeHtml(v.type || 'Vehicle')}
               </span>
@@ -1113,6 +1219,7 @@
       ${v.remarks && v.remarks !== '—' ? `<p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;"><strong>${t.colRemarks}:</strong> ${escapeHtml(v.remarks)}</p>` : ''}
       ${v.notes ? `<p style="font-size: 0.82rem; color: var(--text-dim); margin-bottom: 1rem; line-height: 1.4;">${escapeHtml(v.notes)}</p>` : ''}
       <div class="car-card-actions">
+        ${isUnknown ? `<button class="btn btn-amber-soft btn-sm quick-add-make-btn" title="Add make & model to system list" style="margin-right: auto;">${t.btnQuickAddMakeModel || '+ Add to List'}</button>` : ''}
         <button class="btn btn-secondary btn-sm renew-btn" title="Extend expiry date by 1 Year">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
           <span>+1 ${currentLang === 'ar' ? 'سنة' : 'Year'}</span>
@@ -1129,6 +1236,10 @@
       </div>
     `;
 
+    const quickAddBtn = card.querySelector('.quick-add-make-btn');
+    if (quickAddBtn) {
+      quickAddBtn.addEventListener('click', () => quickAddVehicleMakeModel(v.id));
+    }
     card.querySelector('.renew-btn').addEventListener('click', () => quickRenewVehicle(v.id));
     card.querySelector('.edit-btn').addEventListener('click', () => openModalForEdit(v.id));
     card.querySelector('.delete-btn').addEventListener('click', () => deleteVehicle(v.id));
@@ -1300,6 +1411,9 @@
           colorName,
           remarks,
           notes,
+          isUnknownMakeModel: false,
+          unknownMake: false,
+          unknownModel: false,
           updatedAt: Date.now()
         };
         showToast(`${t.updateSuccess}: ${canonicalType} ${canonicalModel} (${plate.toUpperCase()})`, 'success');
@@ -1443,6 +1557,105 @@
     }
   }
 
+  function deleteAllUnknownVehicles() {
+    const unknownVehicles = vehicles.filter(v => v.isUnknownMakeModel);
+    if (unknownVehicles.length === 0) return;
+
+    const t = i18n[currentLang];
+    const confirmMsg = (t.deleteAllUnknownsConfirm || 'Are you sure you want to delete all {count} unrecognized vehicle record(s)?')
+      .replace('{count}', unknownVehicles.length);
+
+    if (confirm(confirmMsg)) {
+      const deletedCount = unknownVehicles.length;
+      vehicles = vehicles.filter(v => !v.isUnknownMakeModel);
+      saveVehicles();
+      renderApp();
+
+      const msg = (t.deleteAllUnknownsSuccess || 'Successfully deleted {count} unrecognized vehicle(s)')
+        .replace('{count}', deletedCount);
+      showToast(msg, 'info');
+    }
+  }
+
+  function addAllUnknownsToKnownList() {
+    const unknownVehicles = vehicles.filter(v => v.isUnknownMakeModel);
+    if (unknownVehicles.length === 0) return;
+
+    let addedCount = 0;
+    unknownVehicles.forEach(v => {
+      if (v.type && v.model) {
+        const merged = getMergedBrandsData();
+        const existingBrandKey = Object.keys(merged).find(k => k.toLowerCase() === v.type.trim().toLowerCase());
+        const targetBrand = existingBrandKey || v.type.trim();
+
+        if (!customBrandsData[targetBrand]) {
+          customBrandsData[targetBrand] = [];
+        }
+        const existingModel = (customBrandsData[targetBrand] || []).find(m => m.toLowerCase() === v.model.trim().toLowerCase());
+        if (!existingModel) {
+          customBrandsData[targetBrand].push(v.model.trim());
+          addedCount++;
+        }
+
+        // Clear unknown flags on vehicle
+        v.isUnknownMakeModel = false;
+        v.unknownMake = false;
+        v.unknownModel = false;
+        v.type = targetBrand;
+        v.model = existingModel || v.model.trim();
+      }
+    });
+
+    if (addedCount > 0) {
+      saveCustomBrands();
+      populateBrandDatalist();
+    }
+
+    saveVehicles();
+    renderApp();
+
+    const t = i18n[currentLang];
+    const msg = (t.addAllUnknownsSuccess || 'Successfully registered {count} unknown make(s)/model(s) into your system list!')
+      .replace('{count}', unknownVehicles.length);
+    showToast(msg, 'success');
+  }
+
+  function quickAddVehicleMakeModel(vehicleId) {
+    const v = vehicles.find(item => item.id === vehicleId);
+    if (!v || !v.type || !v.model) return;
+
+    const merged = getMergedBrandsData();
+    const existingBrandKey = Object.keys(merged).find(k => k.toLowerCase() === v.type.trim().toLowerCase());
+    const targetBrand = existingBrandKey || v.type.trim();
+
+    if (!customBrandsData[targetBrand]) {
+      customBrandsData[targetBrand] = [];
+    }
+
+    const existingModel = (customBrandsData[targetBrand] || []).find(m => m.toLowerCase() === v.model.trim().toLowerCase());
+    if (!existingModel) {
+      customBrandsData[targetBrand].push(v.model.trim());
+    }
+
+    saveCustomBrands();
+    populateBrandDatalist();
+
+    v.isUnknownMakeModel = false;
+    v.unknownMake = false;
+    v.unknownModel = false;
+    v.type = targetBrand;
+    v.model = existingModel || v.model.trim();
+
+    saveVehicles();
+    renderApp();
+
+    const t = i18n[currentLang];
+    const msg = (t.customMakeAddedSuccess || 'Successfully added custom make & model: {make} - {model}')
+      .replace('{make}', targetBrand)
+      .replace('{model}', existingModel || v.model.trim());
+    showToast(msg, 'success');
+  }
+
   /* ==========================================
      Excel File Export & Import (.xlsx)
      ========================================== */
@@ -1518,12 +1731,15 @@
         // Build set of existing plate numbers (from current vehicles array)
         const existingPlates = new Set(vehicles.map(v => (v.plate || '').trim().toUpperCase()));
 
+        const mergedBrands = getMergedBrandsData();
+        let unknownCount = 0;
+
         jsonRows.forEach((row, i) => {
           let rawNo = String(row['Vehicle No'] || row['رقم المركبة'] || row['No.'] || row['الرقم'] || (vehicles.length + i + 1)).padStart(3, '0');
           let vehicleNo = rawNo;
 
-          const type = String(row['Vehicle Type'] || row['نوع المركبة'] || row['Type'] || 'Sedan');
-          const model = String(row['Model'] || row['الموديل'] || row['Make & Model'] || 'Vehicle');
+          const type = String(row['Vehicle Type'] || row['نوع المركبة'] || row['Type'] || 'Sedan').trim();
+          const model = String(row['Model'] || row['الموديل'] || row['Make & Model'] || 'Vehicle').trim();
           const plate = String(row['Plate No'] || row['رقم اللوحة'] || row['Plate'] || '12345').trim().toUpperCase();
           const driverName = String(row['Driver Name'] || row['اسم السائق'] || row['Driver'] || '');
           const registrationNo = String(row['Registration No'] || row['رقم التسجيل'] || row['Registration'] || '');
@@ -1539,11 +1755,31 @@
               existingPlates.add(plate);
             }
 
+            // Check if make and model are already known
+            const matchedBrandKey = Object.keys(mergedBrands).find(k => k.toLowerCase() === type.toLowerCase());
+            let isUnknownMake = !matchedBrandKey;
+            let isUnknownModel = false;
+
+            if (matchedBrandKey) {
+              const knownModels = mergedBrands[matchedBrandKey] || [];
+              const matchedModel = knownModels.find(m => m.toLowerCase() === model.toLowerCase());
+              if (!matchedModel) {
+                isUnknownModel = true;
+              }
+            } else {
+              isUnknownModel = true;
+            }
+
+            const isUnknownMakeModel = isUnknownMake || isUnknownModel;
+            if (isUnknownMakeModel) {
+              unknownCount++;
+            }
+
             newVehicles.push({
               id: 'car_' + Date.now() + '_' + i,
               vehicleNo,
-              type,
-              model,
+              type: matchedBrandKey || type,
+              model: model,
               plate,
               driverName,
               registrationNo,
@@ -1553,6 +1789,9 @@
               color: '#3B82F6',
               notes: 'Imported from Excel file',
               isDuplicate: isDuplicatePlate,
+              isUnknownMakeModel: isUnknownMakeModel,
+              unknownMake: isUnknownMake,
+              unknownModel: isUnknownModel,
               createdAt: Date.now() + i
             });
           }
@@ -1563,35 +1802,18 @@
           return;
         }
 
-        // Auto-register imported makes/models into customBrandsData
-        let addedCustomCount = 0;
-        newVehicles.forEach(v => {
-          if (v.type && v.model) {
-            const merged = getMergedBrandsData();
-            const existingBrandKey = Object.keys(merged).find(k => k.toLowerCase() === v.type.trim().toLowerCase());
-            const targetBrand = existingBrandKey || v.type.trim();
-
-            if (!customBrandsData[targetBrand]) {
-              customBrandsData[targetBrand] = [];
-            }
-            const existingModel = (customBrandsData[targetBrand] || []).find(m => m.toLowerCase() === v.model.trim().toLowerCase());
-            if (!existingModel) {
-              customBrandsData[targetBrand].push(v.model.trim());
-              addedCustomCount++;
-            }
-          }
-        });
-        if (addedCustomCount > 0) {
-          saveCustomBrands();
-          populateBrandDatalist();
-        }
-
         // APPEND imported vehicles onto existing list
         vehicles = vehicles.concat(newVehicles);
         saveVehicles();
         renderApp();
 
-        if (duplicateCount > 0) {
+        const t = i18n[currentLang];
+        if (unknownCount > 0) {
+          const warnMsg = (t.importedWithUnknownsWarn || 'Imported {total} vehicles! ({count} vehicle(s) have unlisted makes/models and are highlighted for review)')
+            .replace('{total}', newVehicles.length)
+            .replace('{count}', unknownCount);
+          showToast(warnMsg, 'warning');
+        } else if (duplicateCount > 0) {
           const msg = currentLang === 'ar'
             ? `تم استيراد ${newVehicles.length} مركبة بنجاح! (${duplicateCount} مركبة مكررة تم تمييزها في الجدول الرئيسي)`
             : `Successfully imported ${newVehicles.length} vehicles! (${duplicateCount} duplicate vehicle(s) highlighted in the main table)`;
