@@ -1270,3 +1270,25 @@ html[dir="rtl"] .duplicate-tag-badge {
   margin-left: 0;
   margin-right: 0.4rem;
 }
+
+/* Remove Duplicates Soft Red Button */
+.btn-danger-soft {
+  background: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-danger-soft:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger-soft:active {
+  transform: translateY(0);
+}
+
