@@ -1292,3 +1292,39 @@ html[dir="rtl"] .duplicate-tag-badge {
   transform: translateY(0);
 }
 
+/* Custom Make & Model Link Action & Modal */
+.custom-make-trigger-wrapper {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.btn-link-action {
+  background: transparent;
+  border: 1px dashed var(--accent-blue);
+  color: var(--accent-cyan);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.btn-link-action:hover {
+  background: rgba(0, 242, 254, 0.12);
+  border-color: var(--accent-cyan);
+  transform: translateY(-1px);
+}
+
+.modal-card-sm {
+  max-width: 460px;
+}
+
+
