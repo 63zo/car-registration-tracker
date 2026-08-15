@@ -9,6 +9,10 @@
   const STORAGE_KEY = 'autovault_vehicles_v2';
   const THEME_KEY = 'autovault_theme_pref';
   const LANG_KEY = 'autovault_lang_pref';
+  const CUSTOM_BRANDS_KEY = 'autovault_custom_brands_v1';
+
+  // Custom user-added brands/models store
+  let customBrandsData = {};
 
   // Popular Car Brands & Model Dictionary
   const CAR_BRANDS_DATA = {
@@ -116,7 +120,15 @@
       removeDuplicatesBtn: 'Remove Duplicates',
       removeDuplicatesConfirm: 'Are you sure you want to remove {count} duplicate vehicle record(s)?',
       removeDuplicatesSuccess: 'Successfully removed {count} duplicate vehicle(s)',
-      noDuplicatesFound: 'No duplicate vehicle records found'
+      noDuplicatesFound: 'No duplicate vehicle records found',
+      lblAddCustomMakeLink: '+ Add New Make or Model to List',
+      customMakeModalTitle: 'Add Custom Vehicle Make & Model',
+      lblCustomMake: 'Car Make / Brand',
+      lblCustomModel: 'Model Name',
+      btnSaveCustomMake: 'Save & Select',
+      errMakeNotInList: 'Please select a valid car make from the existing list to avoid typos (or click "+ Add New Make or Model to List").',
+      errModelNotInList: 'Please select a valid model for {brand} from the existing list to avoid typos (or click "+ Add New Make or Model to List").',
+      customMakeAddedSuccess: 'Successfully added custom make & model: {make} - {model}'
     },
     ar: {
       brandTitle: 'أوتو فولت',
@@ -189,7 +201,15 @@
       removeDuplicatesBtn: 'حذف المكررات',
       removeDuplicatesConfirm: 'هل أنت تأكد من حذف {count} مركبة مكررة؟',
       removeDuplicatesSuccess: 'تم حذف {count} مركبة مكررة بنجاح',
-      noDuplicatesFound: 'لا توجد سجلات مركبات مكررة'
+      noDuplicatesFound: 'لا توجد سجلات مركبات مكررة',
+      lblAddCustomMakeLink: '+ إضافة ماركة أو موديل جديد للقائمة',
+      customMakeModalTitle: 'إضافة ماركة وموديل سيارة جديد',
+      lblCustomMake: 'ماركة السيارة / الصانع',
+      lblCustomModel: 'اسم الموديل الجديد',
+      btnSaveCustomMake: 'حفظ واختيار',
+      errMakeNotInList: 'يرجى اختيار ماركة سيارة من القائمة المتاحة لتجنب الأخطاء الإملائية (أو انقر على "+ إضافة ماركة أو موديل جديد").',
+      errModelNotInList: 'يرجى اختيار موديل صالح لـ {brand} من القائمة المتاحة لتجنب الأخطاء الإملائية (أو انقر على "+ إضافة ماركة أو موديل جديد").',
+      customMakeAddedSuccess: 'تمت إضافة الماركة والموديل الجديد بنجاح: {make} - {model}'
     }
   };
 
@@ -307,18 +327,83 @@
     txtLivePreviewLabel: document.getElementById('txt-live-preview-label'),
     previewPlateText: document.getElementById('preview-plate-text'),
 
+    // Custom Make & Model Modal Elements
+    customMakeModal: document.getElementById('custom-make-modal'),
+    customMakeModalTitle: document.getElementById('custom-make-modal-title'),
+    closeCustomMakeModalBtn: document.getElementById('close-custom-make-modal-btn'),
+    cancelCustomMakeBtn: document.getElementById('cancel-custom-make-btn'),
+    saveCustomMakeBtn: document.getElementById('save-custom-make-btn'),
+    txtCancelCustomMakeBtn: document.getElementById('txt-cancel-custom-make-btn'),
+    txtSaveCustomMakeBtn: document.getElementById('txt-save-custom-make-btn'),
+    customMakeForm: document.getElementById('custom-make-form'),
+    customMakeInput: document.getElementById('custom-make-input'),
+    customModelInput: document.getElementById('custom-model-input'),
+    openAddCustomMakeBtn: document.getElementById('open-add-custom-make-btn'),
+    txtAddCustomMakeLink: document.getElementById('txt-add-custom-make-link'),
+    lblCustomMake: document.getElementById('lbl-custom-make'),
+    lblCustomModel: document.getElementById('lbl-custom-model'),
+
     // Footer & Toast
     txtFooter: document.getElementById('txt-footer'),
     toastContainer: document.getElementById('toast-container')
   };
 
   /* ==========================================
-     Brand & Model Selector Helpers
+     Brand & Model Store & Selector Helpers
      ========================================== */
+  function loadCustomBrands() {
+    try {
+      const raw = localStorage.getItem(CUSTOM_BRANDS_KEY);
+      if (raw) {
+        customBrandsData = JSON.parse(raw);
+      } else {
+        customBrandsData = {};
+      }
+    } catch (e) {
+      console.error('Error loading custom brands:', e);
+      customBrandsData = {};
+    }
+  }
+
+  function saveCustomBrands() {
+    try {
+      localStorage.setItem(CUSTOM_BRANDS_KEY, JSON.stringify(customBrandsData));
+    } catch (e) {
+      console.error('Error saving custom brands:', e);
+    }
+  }
+
+  function getMergedBrandsData() {
+    const merged = {};
+    Object.keys(CAR_BRANDS_DATA).forEach(brand => {
+      merged[brand] = [...CAR_BRANDS_DATA[brand]];
+    });
+
+    if (customBrandsData && typeof customBrandsData === 'object') {
+      Object.keys(customBrandsData).forEach(customBrand => {
+        const existingKey = Object.keys(merged).find(k => k.toLowerCase() === customBrand.toLowerCase());
+        const customModels = Array.isArray(customBrandsData[customBrand]) ? customBrandsData[customBrand] : [];
+        
+        if (existingKey) {
+          customModels.forEach(m => {
+            if (!merged[existingKey].some(item => item.toLowerCase() === m.toLowerCase())) {
+              merged[existingKey].push(m);
+            }
+          });
+        } else {
+          merged[customBrand] = [...customModels];
+        }
+      });
+    }
+
+    return merged;
+  }
+
   function populateBrandDatalist() {
     if (!dom.brandList) return;
     dom.brandList.innerHTML = '';
-    Object.keys(CAR_BRANDS_DATA).sort().forEach(brand => {
+    const allBrands = getMergedBrandsData();
+    Object.keys(allBrands).sort().forEach(brand => {
       const option = document.createElement('option');
       option.value = brand;
       dom.brandList.appendChild(option);
@@ -347,7 +432,8 @@
   function findMatchingBrandKey(inputBrand) {
     if (!inputBrand) return null;
     const cleanInput = inputBrand.trim().toLowerCase();
-    return Object.keys(CAR_BRANDS_DATA).find(
+    const allBrands = getMergedBrandsData();
+    return Object.keys(allBrands).find(
       key => key.toLowerCase() === cleanInput
     ) || null;
   }
@@ -356,12 +442,13 @@
     renderBrandChips(brandName);
     const matchedBrand = findMatchingBrandKey(brandName);
     const t = i18n[currentLang];
+    const allBrands = getMergedBrandsData();
 
     if (!dom.modelList) return;
     dom.modelList.innerHTML = '';
 
     if (matchedBrand) {
-      const models = CAR_BRANDS_DATA[matchedBrand];
+      const models = allBrands[matchedBrand] || [];
       models.forEach(model => {
         const option = document.createElement('option');
         option.value = model;
@@ -389,6 +476,7 @@
   function init() {
     loadLanguage();
     loadTheme();
+    loadCustomBrands();
     loadVehicles();
     populateBrandDatalist();
     setupEventListeners();
@@ -471,6 +559,14 @@
     dom.txtLivePreviewLabel.textContent = t.lblLivePreview;
     dom.txtCancelBtn.textContent = t.btnCancel;
     dom.txtSaveBtn.textContent = t.btnSave;
+
+    // Custom Make Modal & Trigger Text
+    if (dom.txtAddCustomMakeLink) dom.txtAddCustomMakeLink.textContent = t.lblAddCustomMakeLink;
+    if (dom.customMakeModalTitle) dom.customMakeModalTitle.textContent = t.customMakeModalTitle;
+    if (dom.lblCustomMake && dom.lblCustomMake.childNodes[0]) dom.lblCustomMake.childNodes[0].nodeValue = t.lblCustomMake + ' ';
+    if (dom.lblCustomModel && dom.lblCustomModel.childNodes[0]) dom.lblCustomModel.childNodes[0].nodeValue = t.lblCustomModel + ' ';
+    if (dom.txtCancelCustomMakeBtn) dom.txtCancelCustomMakeBtn.textContent = t.btnCancel;
+    if (dom.txtSaveCustomMakeBtn) dom.txtSaveCustomMakeBtn.textContent = t.btnSaveCustomMake;
 
     // Refresh model options placeholder for current language
     if (dom.typeInput) {
@@ -1144,8 +1240,41 @@
       showFieldError('vehicleno', t.errDuplicateVehicleNo || 'Vehicle No. must be unique (a vehicle with this number already exists)');
       isValid = false;
     }
-    if (!type) { showFieldError('type', 'Please enter vehicle type'); isValid = false; }
-    if (!model) { showFieldError('model', 'Please enter model'); isValid = false; }
+
+    // Enforce Choosing from Existing Makes & Models (to prevent typos)
+    let canonicalType = type;
+    let canonicalModel = model;
+
+    if (!type) {
+      showFieldError('type', 'Please enter vehicle type / make');
+      isValid = false;
+    } else {
+      const matchedBrandKey = findMatchingBrandKey(type);
+      if (!matchedBrandKey) {
+        showFieldError('type', t.errMakeNotInList || 'Please select a valid make from the list (or click "+ Add New Make or Model to List").');
+        isValid = false;
+      } else {
+        canonicalType = matchedBrandKey;
+        const allBrands = getMergedBrandsData();
+        const availableModels = allBrands[matchedBrandKey] || [];
+        
+        if (!model) {
+          showFieldError('model', 'Please enter vehicle model');
+          isValid = false;
+        } else {
+          const matchedModel = availableModels.find(m => m.toLowerCase() === model.toLowerCase());
+          if (!matchedModel) {
+            const msg = (t.errModelNotInList || 'Please select a valid model for {brand} from the list (or click "+ Add New Make or Model to List").')
+              .replace('{brand}', matchedBrandKey);
+            showFieldError('model', msg);
+            isValid = false;
+          } else {
+            canonicalModel = matchedModel;
+          }
+        }
+      }
+    }
+
     if (!plate) { showFieldError('plate', 'Please enter plate number'); isValid = false; }
     if (!driverName) { showFieldError('driver', 'Please enter driver name'); isValid = false; }
     if (!registrationNo) { showFieldError('registration', 'Please enter registration number'); isValid = false; }
@@ -1160,8 +1289,8 @@
         vehicles[index] = {
           ...vehicles[index],
           vehicleNo,
-          type,
-          model,
+          type: canonicalType,
+          model: canonicalModel,
           plate: plate.toUpperCase(),
           driverName,
           registrationNo,
@@ -1173,15 +1302,15 @@
           notes,
           updatedAt: Date.now()
         };
-        showToast(`${t.updateSuccess}: ${model} (${plate.toUpperCase()})`, 'success');
+        showToast(`${t.updateSuccess}: ${canonicalType} ${canonicalModel} (${plate.toUpperCase()})`, 'success');
       }
     } else {
       const isDuplicatePlate = vehicles.some(v => (v.plate || '').trim().toUpperCase() === plate.toUpperCase());
       const newVehicle = {
         id: 'car_' + Date.now(),
         vehicleNo,
-        type,
-        model,
+        type: canonicalType,
+        model: canonicalModel,
         plate: plate.toUpperCase(),
         driverName,
         registrationNo,
@@ -1195,7 +1324,7 @@
         createdAt: Date.now()
       };
       vehicles.push(newVehicle);
-      showToast(`${t.addSuccess}: ${model} (${plate.toUpperCase()})`, 'success');
+      showToast(`${t.addSuccess}: ${canonicalType} ${canonicalModel} (${plate.toUpperCase()})`, 'success');
     }
 
     saveVehicles();
@@ -1434,6 +1563,29 @@
           return;
         }
 
+        // Auto-register imported makes/models into customBrandsData
+        let addedCustomCount = 0;
+        newVehicles.forEach(v => {
+          if (v.type && v.model) {
+            const merged = getMergedBrandsData();
+            const existingBrandKey = Object.keys(merged).find(k => k.toLowerCase() === v.type.trim().toLowerCase());
+            const targetBrand = existingBrandKey || v.type.trim();
+
+            if (!customBrandsData[targetBrand]) {
+              customBrandsData[targetBrand] = [];
+            }
+            const existingModel = (customBrandsData[targetBrand] || []).find(m => m.toLowerCase() === v.model.trim().toLowerCase());
+            if (!existingModel) {
+              customBrandsData[targetBrand].push(v.model.trim());
+              addedCustomCount++;
+            }
+          }
+        });
+        if (addedCustomCount > 0) {
+          saveCustomBrands();
+          populateBrandDatalist();
+        }
+
         // APPEND imported vehicles onto existing list
         vehicles = vehicles.concat(newVehicles);
         saveVehicles();
@@ -1570,6 +1722,93 @@
   }
 
   /* ==========================================
+     Custom Make & Model Handlers
+     ========================================== */
+  function openCustomMakeModal() {
+    dom.customMakeInput.value = dom.typeInput.value ? dom.typeInput.value.trim() : '';
+    dom.customModelInput.value = '';
+    clearCustomMakeErrors();
+    if (dom.customMakeModal) {
+      dom.customMakeModal.classList.remove('hidden');
+      dom.customMakeInput.focus();
+    }
+  }
+
+  function closeCustomMakeModal() {
+    if (dom.customMakeModal) {
+      dom.customMakeModal.classList.add('hidden');
+    }
+    clearCustomMakeErrors();
+  }
+
+  function clearCustomMakeErrors() {
+    if (dom.customMakeForm) {
+      dom.customMakeForm.querySelectorAll('.error-msg').forEach(el => el.classList.remove('visible'));
+      dom.customMakeForm.querySelectorAll('.form-input').forEach(el => el.classList.remove('is-invalid'));
+    }
+  }
+
+  function showCustomFieldError(fieldKey, message) {
+    const inputEl = document.getElementById(`${fieldKey}-input`);
+    const errorEl = document.getElementById(`${fieldKey}-error`);
+    if (inputEl) inputEl.classList.add('is-invalid');
+    if (errorEl) {
+      errorEl.textContent = message;
+      errorEl.classList.add('visible');
+    }
+  }
+
+  function handleCustomMakeSubmit(e) {
+    e.preventDefault();
+    clearCustomMakeErrors();
+
+    const newMake = dom.customMakeInput.value.trim();
+    const newModel = dom.customModelInput.value.trim();
+
+    let isValid = true;
+    if (!newMake) {
+      showCustomFieldError('custom-make', currentLang === 'ar' ? 'يرجى إدخال اسم الماركة' : 'Please enter car make name');
+      isValid = false;
+    }
+    if (!newModel) {
+      showCustomFieldError('custom-model', currentLang === 'ar' ? 'يرجى إدخال اسم الموديل' : 'Please enter model name');
+      isValid = false;
+    }
+
+    if (!isValid) return;
+
+    // Check if brand exists in canonical case
+    const merged = getMergedBrandsData();
+    const existingBrandKey = Object.keys(merged).find(k => k.toLowerCase() === newMake.toLowerCase());
+    const targetBrand = existingBrandKey || newMake;
+
+    if (!customBrandsData[targetBrand]) {
+      customBrandsData[targetBrand] = [];
+    }
+
+    const existingModel = (customBrandsData[targetBrand] || []).find(m => m.toLowerCase() === newModel.toLowerCase());
+    if (!existingModel) {
+      customBrandsData[targetBrand].push(newModel);
+    }
+
+    saveCustomBrands();
+    populateBrandDatalist();
+
+    // Set into main vehicle form
+    dom.typeInput.value = targetBrand;
+    updateBrandAndModelOptions(targetBrand);
+    dom.modelInput.value = existingModel || newModel;
+
+    closeCustomMakeModal();
+
+    const t = i18n[currentLang];
+    const msg = (t.customMakeAddedSuccess || 'Successfully added custom make & model: {make} - {model}')
+      .replace('{make}', targetBrand)
+      .replace('{model}', existingModel || newModel);
+    showToast(msg, 'success');
+  }
+
+  /* ==========================================
      Event Listeners Binds
      ========================================== */
   function setupEventListeners() {
@@ -1591,6 +1830,27 @@
     dom.closeModalBtn.addEventListener('click', closeModal);
     dom.cancelModalBtn.addEventListener('click', closeModal);
     dom.carForm.addEventListener('submit', handleFormSubmit);
+
+    // Custom Make Modal Binds
+    if (dom.openAddCustomMakeBtn) {
+      dom.openAddCustomMakeBtn.addEventListener('click', openCustomMakeModal);
+    }
+    if (dom.closeCustomMakeModalBtn) {
+      dom.closeCustomMakeModalBtn.addEventListener('click', closeCustomMakeModal);
+    }
+    if (dom.cancelCustomMakeBtn) {
+      dom.cancelCustomMakeBtn.addEventListener('click', closeCustomMakeModal);
+    }
+    if (dom.customMakeForm) {
+      dom.customMakeForm.addEventListener('submit', handleCustomMakeSubmit);
+    }
+    if (dom.customMakeModal) {
+      dom.customMakeModal.addEventListener('click', (e) => {
+        if (e.target === dom.customMakeModal) {
+          closeCustomMakeModal();
+        }
+      });
+    }
 
     // Live Plate Preview Typing Sync
     dom.plateInput.addEventListener('input', (e) => {
@@ -1681,8 +1941,12 @@
 
     // Keyboard & Backdrop Modal Closing
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !dom.carModal.classList.contains('hidden')) {
-        closeModal();
+      if (e.key === 'Escape') {
+        if (dom.customMakeModal && !dom.customMakeModal.classList.contains('hidden')) {
+          closeCustomMakeModal();
+        } else if (!dom.carModal.classList.contains('hidden')) {
+          closeModal();
+        }
       }
     });
 
